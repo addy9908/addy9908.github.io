@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utilities — Your Name</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-root="">
+<main class="container">
+  <a class="backlink" href="index.html">&larr; Back to home</a>
+  <h1>Utilities</h1>
+  <p class="note">Calculators run entirely in your browser. Nothing is sent to a server.</p>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="calc-solution">Solution Preparation</div>
+    <div class="tab" data-tab="calc-pump">Syringe Pump (Med Associates)</div>
+  </div>
+
+  <!-- A. Solution prep -->
+  <div class="calc page-tab" id="calc-solution" style="border-top-left-radius:0">
+    <p>Mass needed is computed from molarity, volume, and molecular weight.</p>
+    <div class="row">
+      <div><label>Molecular weight (g/mol)</label><input id="mw" type="number" step="any" placeholder="e.g. 58.44"></div>
+      <div><label>Target concentration</label><input id="conc" type="number" step="any" placeholder="e.g. 100"></div>
+    </div>
+    <div class="row">
+      <div><label>Concentration unit</label>
+        <select id="concUnit">
+          <option value="1">mol/L (M)</option>
+          <option value="0.001">mmol/L (mM)</option>
+          <option value="0.000001">µmol/L (µM)</option>
+        </select></div>
+      <div><label>Final volume</label><input id="vol" type="number" step="any" placeholder="e.g. 500"></div>
+    </div>
+    <div class="row">
+      <div><label>Volume unit</label>
+        <select id="volUnit">
+          <option value="1">L</option>
+          <option value="0.001" selected>mL</option>
+          <option value="0.000001">µL</option>
+        </select></div>
+      <div></div>
+    </div>
+    <div class="result" id="solResult" style="display:none">
+      <div>Required mass: <span class="big" id="solMass"></span></div>
+      <div class="note" id="solMoles"></div>
+    </div>
+    <div class="workings" id="solWork" style="display:none"></div>
+
+    <h3 style="margin-top:26px">Percent solution (w/v)</h3>
+    <div class="row">
+      <div><label>Percent (% w/v)</label><input id="pct" type="number" step="any" placeholder="e.g. 0.9"></div>
+      <div><label>Volume (mL)</label><input id="pctVol" type="number" step="any" placeholder="e.g. 100"></div>
+    </div>
+    <div class="result" id="pctResult" style="display:none">
+      Required solute: <span class="big" id="pctMass"></span>
+    </div>
+    <div class="workings" id="pctWork" style="display:none"></div>
+  </div>
+
+  <!-- B. Syringe pump -->
+  <div class="calc page-tab" id="calc-pump" style="display:none;border-top-left-radius:0">
+    <p>Select a syringe preset to auto-fill its inner diameter (editable), enter a flow rate,
+       and get the pump setting. All steps are shown below the result.</p>
+    <div class="row">
+      <div><label>Syringe preset</label><select id="syringe"></select></div>
+      <div><label>Inner diameter (mm) — editable</label><input id="diam" type="number" step="any"></div>
+    </div>
+    <div class="row">
+      <div><label>Desired flow rate</label><input id="flow" type="number" step="any" placeholder="e.g. 10"></div>
+      <div><label>Flow rate unit</label>
+        <select id="flowUnit">
+          <option value="uls">µL/s</option>
+          <option value="mls">mL/s</option>
+          <option value="mlmin" selected>mL/min</option>
+        </select></div>
+    </div>
+    <div class="row">
+      <div><label>Motor speed (RPM) — from pump calibration sheet</label><input id="rpm" type="number" step="any" value="3.33"></div>
+      <div><label>Pump constant k (mL·min⁻¹ per RPM·cm²)</label><input id="kconst" type="number" step="any" value="0.19538"></div>
+    </div>
+    <div class="result" id="pumpResult" style="display:none">
+      <div>Pump setting (motor RPM): <span class="big" id="pumpRPM"></span></div>
+      <div class="note" id="pumpMaxRate"></div>
+    </div>
+    <div class="workings" id="pumpWork" style="display:none"></div>
+    <p class="note">Equation: <code>Flow (mL/min) = k × RPM × A</code>, where <code>A = π(d/2)²</code>.
+      The constant <code>k = 0.19538</code> and RPM are printed on your pump's calibration sheet, so both
+      are editable here. Verify against your calibration sheet before use.</p>
+  </div>
+</main>
+
+<footer class="container">
+  &copy; <span id="year"></span> Your Name &middot; Calculators provided as-is; verify critical values independently.
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script src="assets/calculators.js"></script>
+</body>
+</html>

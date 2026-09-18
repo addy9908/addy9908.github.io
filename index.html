@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Name — Personal Site</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-root="">
+<main class="container">
+  <div class="hero">
+    <h1>Hi, I'm Your Name</h1>
+    <p>Short one-line bio — e.g. "Neuroscience researcher building open-source lab tools."
+       Replace this with a couple sentences about who you are and what you work on.</p>
+  </div>
+
+  <h2 class="section">Explore</h2>
+  <div class="grid">
+    <div class="card">
+      <span class="tag">Projects</span>
+      <h3>Open-source repositories</h3>
+      <p>Browse my public GitHub projects with links to their pages.</p>
+      <a href="#" onclick="document.getElementById('dd-projects').classList.add('open');return false;">See projects &rarr;</a>
+    </div>
+    <div class="card">
+      <span class="tag">Docs</span>
+      <h3>Project documentation</h3>
+      <p>Detailed guides, installation steps, and examples for selected projects.</p>
+      <a href="#" onclick="document.getElementById('dd-docs').classList.add('open');return false;">Read docs &rarr;</a>
+    </div>
+    <div class="card">
+      <span class="tag">Utilities</span>
+      <h3>Lab calculators</h3>
+      <p>Solution preparation and Med Associates syringe pump tools that run in your browser.</p>
+      <a href="utilities.html">Open utilities &rarr;</a>
+    </div>
+  </div>
+</main>
+
+<footer class="container">
+  &copy; <span id="year"></span> Your Name &middot; Static site on GitHub Pages
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+</body>
+</html>
