@@ -10,7 +10,7 @@
   header.className = "site";
   header.innerHTML = `
     <div class="container nav">
-      <a class="brand" href="${root}index.html">Your Name</a>
+      <a class="brand" href="${root}index.html">Zengyou Ye</a>
       <a class="link" href="${root}index.html">Home</a>
       <div class="dropdown" id="dd-projects">
         <button type="button">Projects &#9662;</button>
