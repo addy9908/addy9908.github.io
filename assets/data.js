@@ -16,7 +16,15 @@ const PROJECT_OPTIONS = {
   excludeArchived: true,     // hide archived repos
   hideSelfNamedSite: true,   // hide the USERNAME.github.io repo itself
   sortBy: "updated",         // "updated", "stars", or "name"
-  maxRepos: 100              // GitHub returns up to 100 per page
+  maxRepos: 100,             // GitHub returns up to 100 per page
+
+  // Repos to hide from the Projects dropdown (exact names, case-insensitive).
+  // e.g. ["test-repo", "dotfiles", "old-thing"]
+  hideRepos: [],
+
+  // If non-empty, ONLY these repos are shown (a whitelist). Leave empty to
+  // show everything except hideRepos. Names are exact, case-insensitive.
+  onlyRepos: ["FED3_ZY", "iMOSS"]
 };
 
 /* --- Documentation pages (always manual) ---
@@ -27,9 +35,9 @@ const PROJECT_OPTIONS = {
    docPage : path to its documentation page (relative to site root) */
 const DOCS = [
   {
-    repo: "iMOSS",
-    title: "iMOSS",
-    docPage: "projects/imoss.html"
+    repo: "example-project",
+    title: "example-project",
+    docPage: "projects/example.html"
   }
 ];
 

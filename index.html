@@ -20,13 +20,13 @@
       <span class="tag">Projects</span>
       <h3>Open-source repositories</h3>
       <p>Browse my public GitHub projects with links to their pages.</p>
-      <a href="#" onclick="document.getElementById('dd-projects').classList.add('open');return false;">See projects &rarr;</a>
+      <a href="#" onclick="event.stopPropagation();document.getElementById('dd-projects').classList.add('open');window.scrollTo(0,0);return false;">See projects &rarr;</a>
     </div>
     <div class="card">
       <span class="tag">Docs</span>
       <h3>Project documentation</h3>
       <p>Detailed guides, installation steps, and examples for selected projects.</p>
-      <a href="#" onclick="document.getElementById('dd-docs').classList.add('open');return false;">Read docs &rarr;</a>
+      <a href="#" onclick="event.stopPropagation();document.getElementById('dd-docs').classList.add('open');window.scrollTo(0,0);return false;">Read docs &rarr;</a>
     </div>
     <div class="card">
       <span class="tag">Utilities</span>

@@ -90,6 +90,11 @@
           if (OPT.excludeArchived && r.archived) return false;
           if (OPT.hideSelfNamedSite &&
               r.name.toLowerCase() === (user + ".github.io").toLowerCase()) return false;
+          const nm = r.name.toLowerCase();
+          const hide = (OPT.hideRepos || []).map(s => s.toLowerCase());
+          const only = (OPT.onlyRepos || []).map(s => s.toLowerCase());
+          if (hide.includes(nm)) return false;
+          if (only.length && !only.includes(nm)) return false;
           return true;
         });
 

@@ -9,9 +9,25 @@ Static personal site hosted on GitHub Pages. No build step — plain HTML/CSS/JS
 - `assets/` — shared `style.css`, `nav.js`, `data.js`, `calculators.js`, and `img/`
 
 ## Editing content
-All projects, doc links, and syringe presets live in `assets/data.js`. Edit that one file
-to add content. To add a project doc page, copy `projects/example.html`, rename it, edit it,
-and add an entry to `PROJECTS` in `data.js` with `hasDocs: true` and the new `docPage` path.
+All settings live in `assets/data.js`:
+- `GH_USER` — your GitHub username (required).
+- `PROJECT_OPTIONS.autoProjects` — when true, the Projects dropdown is filled automatically
+  from your public GitHub repos via the API. Set false to use only the manual list.
+- `DOCS` — hand-picked project doc pages (always manual; auto-discovery does not create these).
+- `PROJECTS` — manual fallback list, used if the API is unreachable/rate-limited, and merged in
+  for projects hosted outside your account.
+
+To add a project doc page: copy `projects/example.html`, rename it, edit it, and add an entry
+to `DOCS` in `data.js` with the matching `repo` name and new `docPage` path.
+
+## Auto-discovery notes
+The Projects dropdown uses the public GitHub REST API
+(`https://api.github.com/users/USERNAME/repos`), called from the browser with no token.
+Unauthenticated requests are limited to 60 per hour per visitor IP; if that limit is hit,
+the site silently falls back to the manual `PROJECTS` list. Options in `PROJECT_OPTIONS`
+let you exclude forks/archived repos, hide the `USERNAME.github.io` repo, hide specific repos
+by name (`hideRepos`), show only a chosen whitelist (`onlyRepos`), sort by updated
+date / stars / name, and prefer each repo's live Pages URL when Pages is enabled.
 
 ## Local testing
 Open `index.html` in a browser, or run a local server:
