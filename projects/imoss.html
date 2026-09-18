@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iMOSS — Documentation</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-root="../">
+<main class="container">
+  <a class="backlink" href="../index.html">&larr; Back to home</a>
+
+  <span class="tag">Open-source neuroscience tool</span>
+  <h1>iMOSS — Immobility/Mobility Optimized Scoring System</h1>
+  <p class="note">An open-source platform for high-resolution immobility scoring in the tail
+     suspension test (TST). Originally developed for the TST, it can also be applied to other
+     types of binary behavior scoring.</p>
+  <h2 class="section">Repository</h2>
+  <p><a href="https://github.com/addy9908/iMOSS" target="_blank" rel="noopener">View iMOSS on GitHub &rarr;</a></p>
+  
+  <h2 class="section">Overview</h2>
+  <p>iMOSS is a flexible, open-source, low-cost platform for precise quantification of mobility
+     and immobility in rodent stress-coping behavior. It comprises two independent instruments:</p>
+  <ul>
+    <li><b>iMOSS-MV</b> — a video-based, frame-by-frame manual-scoring tool that lets you
+      annotate the exact onset frame of each binary event, overcoming the temporal imprecision
+      of conventional stopwatch scoring.</li>
+    <li><b>iMOSS-AS</b> — a sensor-based automated instrument that detects immobility/mobility
+      bouts from a load-cell signal at high sampling resolution, using a machine-learning
+      optimized detection threshold.</li>
+  </ul>
+  <p>The two tools can be used independently or together, and the automated output has been
+     shown to align closely with careful manual scoring while remaining sensitive to
+     pharmacological manipulation.</p>
+
+  <h2 class="section">Features</h2>
+  <ul>
+    <li>Frame-level manual annotation of binary behavioral events (iMOSS-MV).</li>
+    <li>Automated, sensor-based bout detection at high sampling rate (iMOSS-AS).</li>
+    <li>Machine-learning optimized threshold for automated immobility/mobility detection.</li>
+    <li>Low-cost, scalable hardware built around common load-cell amplifiers.</li>
+    <li>Applicable beyond the TST to other binary behavior-scoring paradigms.</li>
+    <li>Exports structured data for downstream statistical analysis and plotting.</li>
+    <li>Fully open source under the MIT license.</li>
+  </ul>
+
+  <h2 class="section">System requirements</h2>
+  <p>iMOSS-MV and iMOSS-AS are written in Python and use widely available libraries:
+     OpenCV, Tkinter, NumPy, Pandas, Pillow, SciPy, and PyExcelerate. The automated
+     hardware side (iMOSS-AS) uses an Arduino-compatible microcontroller reading HX711
+     load-cell amplifiers via the HX711_ADC library.</p>
+  <div class="workings">
+    <b>Software:</b> Python 3.x, plus: opencv-python, numpy, pandas, pillow, scipy, pyexcelerate
+    (Tkinter ships with most Python installs).<br>
+    <b>Hardware (iMOSS-AS):</b> Arduino-compatible board, HX711 load-cell amplifier(s),
+    load cell(s), and the <code>HX711_ADC</code> Arduino library.
+  </div>
+
+  <h2 class="section">Installation</h2>
+  <p>Clone the repository:</p>
+  <div class="workings"><code>git clone https://github.com/addy9908/iMOSS.git</code><br><code>cd iMOSS</code></div>
+  <p>Install the Python dependencies (a virtual environment is recommended):</p>
+  <div class="workings"><code>pip install opencv-python numpy pandas pillow scipy pyexcelerate</code></div>
+  <p>For iMOSS-AS hardware, install the <code>HX711_ADC</code> library through the Arduino
+     Library Manager, open <code>iMOSS_AS_V1.ino</code> in the Arduino IDE, and upload it to
+     your board. Load-cell settling time and signal filtering can be adjusted in the library's
+     <code>config.h</code>.</p>
+  <p class="note">See the repository's own documentation for the authoritative, up-to-date
+     installation steps.</p>
+
+  <h2 class="section">Usage</h2>
+  <p><b>iMOSS-MV (manual video scoring):</b> record your TST session (for example as an
+     <code>.avi</code> file), launch the iMOSS-MV application, load the video, and step through
+     frame by frame to mark the onset of each mobility/immobility event. The tool records the
+     exact frame for each transition and exports the scored data.</p>
+  <p><b>iMOSS-AS (automated sensor scoring):</b> mount the animal apparatus on the load cell(s),
+     run the uploaded Arduino sketch to stream force data, and use the iMOSS-AS software to
+     process the signal and classify immobility/mobility bouts using the optimized threshold.</p>
+  <p class="note">Pairing a frame-to-time mapping (e.g. a <code>.csv</code> exported during
+     acquisition) with the video gives precise timing for each scored frame.</p>
+  <h2 class="section">Citation</h2>
+  <p>If you use iMOSS in your work, please cite the accompanying paper:</p>
+  <div class="workings">
+    Ye, Z. et al. <i>iMOSS: an integrated open-source tail suspension test platform for
+    high-resolution immobility scoring and synchronization with neural activity.</i>
+    Frontiers in Behavioral Neuroscience, 2026. doi:10.3389/fnbeh.2026.1819512
+  </div>
+  <p><a href="https://www.frontiersin.org/journals/behavioral-neuroscience/articles/10.3389/fnbeh.2026.1819512/full"
+        target="_blank" rel="noopener">Read the paper &rarr;</a></p>
+
+  <h2 class="section">License</h2>
+  <p>iMOSS is released under the MIT license.</p>
+
+</main>
+
+<footer class="container">
+  &copy; <span id="year"></span> Zengyou Ye
+</footer>
+
+<script src="../assets/data.js"></script>
+<script src="../assets/nav.js"></script>
+</body>
+</html>

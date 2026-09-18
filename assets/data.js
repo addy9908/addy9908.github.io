@@ -27,9 +27,9 @@ const PROJECT_OPTIONS = {
    docPage : path to its documentation page (relative to site root) */
 const DOCS = [
   {
-    repo: "example-project",
-    title: "example-project",
-    docPage: "projects/example.html"
+    repo: "iMOSS",
+    title: "iMOSS",
+    docPage: "projects/imoss.html"
   }
 ];
 
