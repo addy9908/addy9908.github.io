@@ -58,6 +58,14 @@
     "url": "https://linnarssonlab.org/mousebrain/",
     "category": "Databases",
     "desc": "Mouse Brain"
+  },
+  {
+    "title": "Suite2P",
+    "url": "https://suite2p.readthedocs.io/en/latest/",
+    "category": "Tools",
+    "desc": "Imaging analysis"
   }
+  
+  
   
 ]
