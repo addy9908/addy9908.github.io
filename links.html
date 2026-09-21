@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Useful Links — Zengyou Ye</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0}
+  .toolbar input[type=text]{flex:1;min-width:200px}
+  .btn{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:10px 16px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--brand-2);text-decoration:none}
+  .btn.secondary{background:var(--code);color:var(--ink);border:1px solid var(--line)}
+  .cat{margin-top:28px}
+  .cat h2{font-size:1.2rem;border-bottom:1px solid var(--line);padding-bottom:8px;
+    display:flex;align-items:center;gap:10px}
+  .cat h2 .count{font-size:.78rem;color:var(--muted);font-weight:400}
+  .linkgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));margin-top:14px}
+  .linkcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;
+    box-shadow:var(--shadow)}
+  .linkcard a.title{font-weight:600;display:block;margin-bottom:4px;word-break:break-word}
+  .linkcard .url{font-size:.78rem;color:var(--muted);word-break:break-all}
+  .linkcard .desc{font-size:.85rem;color:var(--ink);margin-top:6px}
+  .empty{color:var(--muted);font-size:.92rem;margin-top:16px}
+  .loading{color:var(--muted);margin-top:16px}
+  details{margin-top:28px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  summary{cursor:pointer;font-weight:600}
+  details code{background:var(--code);padding:1px 6px;border-radius:4px;border:1px solid var(--line);
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem}
+  details pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:12px;
+    overflow:auto;font-size:.82rem}
+</style>
+</head>
+<body data-root="">
+<main class="container">
+  <a class="backlink" href="index.html">&larr; Back to home</a>
+  <h1>Useful Links</h1>
+  <p class="note">A shared list of bookmarks stored in this site's repository, so it's the same on
+     every device. To add or change links, edit <code>links.json</code> in the repo (see “How to
+     add a link” at the bottom).</p>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search links…">
+    <a class="btn" id="editBtn" href="#" target="_blank" rel="noopener">Edit links.json on GitHub</a>
+  </div>
+
+  <div id="loading" class="loading">Loading links…</div>
+  <div id="container"></div>
+
+  <details>
+    <summary>How to add a link</summary>
+    <p style="margin-top:12px">Links live in a file called <code>links.json</code> in your
+       repository. Because it's one shared file, any change shows up on all your devices.</p>
+    <ol>
+      <li>Click <b>Edit links.json on GitHub</b> above (or open <code>links.json</code> in your repo
+          and click the pencil icon).</li>
+      <li>Add a new entry to the list. Each link looks like this:</li>
+    </ol>
+    <pre>{
+  "title": "Site name",
+  "url": "https://example.com",
+  "category": "My Category",
+  "desc": "Optional short note"
+}</pre>
+    <p>Put a comma after the previous entry's closing <code>}</code>, paste your new block, and keep
+       everything inside the outer square brackets <code>[ ]</code>. Commit the change; the page
+       updates within about a minute.</p>
+    <p class="note">Tip: entries with the same <code>category</code> are automatically grouped
+       together. To make a new group, just use a new category name.</p>
+  </details>
+</main>
+
+<footer class="container">
+  &copy; <span id="year"></span> Zengyou Ye &middot; Links stored in <code>links.json</code>.
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  let links = [];
+
+  // Build the "Edit on GitHub" link from your username + repo name.
+  // Uses GH_USER from data.js. Set REPO to your Pages repo name.
+  const REPO = (window.GH_USER && window.GH_USER !== "USERNAME")
+    ? guessRepo() : null;
+  function guessRepo(){
+    // If this is a user site (username.github.io) the repo is username.github.io;
+    // otherwise it's the first path segment of the URL.
+    const host = location.hostname;              // e.g. username.github.io
+    const parts = location.pathname.split("/").filter(Boolean);
+    if(parts.length && !host.startsWith(window.GH_USER.toLowerCase())){
+      return parts[0];                            // project site: /REPO/...
+    }
+    return window.GH_USER + ".github.io";         // user site
+  }
+  if(REPO){
+    $("editBtn").href = `https://github.com/${window.GH_USER}/${REPO}/edit/main/links.json`;
+  }else{
+    $("editBtn").style.display = "none";
+  }
+
+  function esc(s){ return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+  async function load(){
+    try{
+      const res = await fetch("links.json?_=" + Date.now());  // cache-bust so edits show quickly
+      if(!res.ok) throw new Error();
+      links = await res.json();
+    }catch(e){
+      $("loading").textContent = "Couldn't load links.json. Make sure the file exists in the repo root.";
+      return;
+    }
+    $("loading").style.display = "none";
+    render();
+  }
+
+  function render(){
+    const term = $("search").value.trim().toLowerCase();
+    const filtered = links.filter(l =>
+      !term || (l.title+" "+l.url+" "+(l.category||"")+" "+(l.desc||"")).toLowerCase().includes(term));
+
+    const container = $("container");
+    if(!filtered.length){
+      container.innerHTML = `<p class="empty">${links.length?"No links match your search.":"No links yet — add some to links.json."}</p>`;
+      return;
+    }
+    const groups = {};
+    filtered.forEach(l=>{ const c=l.category||"Uncategorized"; (groups[c]=groups[c]||[]).push(l); });
+
+    container.innerHTML = Object.keys(groups).sort().map(cat=>{
+      const cards = groups[cat].map(l=>`
+        <div class="linkcard">
+          <a class="title" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.title)}</a>
+          <div class="url">${esc(l.url)}</div>
+          ${l.desc?`<div class="desc">${esc(l.desc)}</div>`:""}
+        </div>`).join("");
+      return `<div class="cat"><h2>${esc(cat)} <span class="count">${groups[cat].length}</span></h2>
+              <div class="linkgrid">${cards}</div></div>`;
+    }).join("");
+  }
+
+  $("search").addEventListener("input", render);
+  load();
+})();
+</script>
+</body>
+</html>

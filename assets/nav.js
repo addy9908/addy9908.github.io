@@ -26,6 +26,7 @@
       </div>
       <a class="link" href="${root}utilities.html">Utilities</a>
 	  <a class="link" href="${root}research.html">Research</a>
+	  <a class="link" href="${root}links.html">Links</a>
     </div>`;
   document.body.prepend(header);
 

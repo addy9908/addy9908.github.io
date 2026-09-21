@@ -1,0 +1,63 @@
+[
+  {
+    "title": "PubMed",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/",
+    "category": "Databases",
+    "desc": "Biomedical literature search"
+  },
+  {
+    "title": "Google Scholar",
+    "url": "https://scholar.google.com/",
+    "category": "Databases",
+    "desc": "Scholarly search engine"
+  },
+  {
+    "title": "NIH RePORTER",
+    "url": "https://reporter.nih.gov/",
+    "category": "Funding",
+    "desc": "Search NIH-funded projects"
+  },
+  {
+    "title": "Addgene",
+    "url": "https://www.addgene.org/",
+    "category": "Lab Resources",
+    "desc": "Plasmid repository"
+  },
+  {
+    "title": "Neurophotometrics",
+    "url": "https://neurophotometrics.com/",
+    "category": "Equipment",
+    "desc": "Fiber photometry systems"
+  },
+  {
+    "title": "GitHub",
+    "url": "https://github.com/",
+    "category": "Tools",
+    "desc": "Code hosting"
+  },
+    {
+    "title": "Bonsai-rx",
+    "url": "https://github.com/bonsai-rx",
+    "category": "Tools",
+    "desc": "Behavior Coding"
+  },
+  {
+    "title": "Allen Mouse Brain",
+    "url": "https://brain-map.org/atlases/anatomy#adult-mouse",
+    "category": "Databases",
+    "desc": "Mouse Brain"
+  },
+  {
+    "title": "Mouse Brain Atlas",
+    "url": "https://labs.gaidi.ca/mouse-brain-atlas/?ml=0&ap=0&dv=0&mode=line&dir=ap",
+    "category": "Databases",
+    "desc": "Mouse Brain"
+  },
+  {
+    "title": "Mouse Brain Data",
+    "url": "https://linnarssonlab.org/mousebrain/",
+    "category": "Databases",
+    "desc": "Mouse Brain"
+  }
+  
+]
