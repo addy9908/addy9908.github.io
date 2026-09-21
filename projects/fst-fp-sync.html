@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FST_FP_synchronization — Documentation</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-root="../">
+<main class="container">
+  <a class="backlink" href="../index.html">&larr; Back to home</a>
+
+  <span class="tag">Open-source neuroscience tool</span>
+  <h1>FST_FP_synchronization — ZY-FP_Analysis</h1>
+  <p class="note">A MATLAB application with a user-friendly GUI that analyzes fiber photometry
+     (FP) data from the Neurophotometrics system and aligns it with forced swim test (FST)
+     behavioral data processed in Bonsai-RX. No coding experience is required to use it.</p>
+<h2 class="section">Repository</h2>
+  <p><a href="https://github.com/addy9908/FST_FP_synchronization" target="_blank" rel="noopener">View FST_FP_synchronization on GitHub &rarr;</a></p>
+  <h2 class="section">Overview</h2>
+  <p>ZY-FP_Analysis was built to analyze fiber photometry data and synchronize it with FST
+     behavioral scoring through a graphical interface, so users without programming background
+     can process, align, and quantify neural activity around behavioral events. The workflow
+     moves through a series of windows: selecting and previewing the FP signal, computing a
+     filtered dF/F and z-score, synchronizing with the FST behavior file, finding signal peaks,
+     linking peaks to behavioral bouts, and finally producing peri-event (aligned) analyses —
+     with one-click export of all data and figures.</p>
+
+  <h2 class="section">Features</h2>
+  <ul>
+    <li>GUI-driven analysis — no coding experience needed.</li>
+    <li>Loads Neurophotometrics FP data (.csv) and FST behavior files scored in Bonsai-RX.</li>
+    <li>Signal cropping, zero-phase filtering (filtfilt), and dF/F computation.</li>
+    <li>Z-scoring with multiple methods (baseline, entire trace, median) and optional manual mean/std.</li>
+    <li>Frame-accurate synchronization of behavioral bouts to the photometry timeline.</li>
+    <li>Peak detection with prominence-based thresholding and binned frequency/amplitude stats.</li>
+    <li>Linking of detected peaks to individual mobility/immobility bouts with per-bout statistics.</li>
+    <li>Peri-event heatmaps, mean/SEM traces, and peak raster plots around behavior onsets.</li>
+    <li>One-click export to Excel, PDF, and editable MATLAB .fig files.</li>
+  </ul>
+
+  <h2 class="section">Requirements</h2>
+  <div class="workings">
+    <b>Software:</b> MATLAB (the app installs as a <code>.mlappinstall</code> app).<br>
+    <b>Input data:</b> Fiber photometry <code>.csv</code> recorded on a Neurophotometrics FP system,
+    and (optionally) an FST behavior file scored in Bonsai-RX.
+  </div>
+
+  <h2 class="section">Installation</h2>
+  <p>Clone the repository:</p>
+  <div class="workings"><code>git clone https://github.com/addy9908/FST_FP_synchronization.git</code></div>
+  <p>Then install the app in MATLAB by opening the <code>ZY_FP_Analysis_JHU.mlappinstall</code>
+     file (double-click it or use the Apps tab &rarr; Install App). Once installed, launch it
+     from the MATLAB Apps toolbar.</p>
+
+  <h2 class="section">Workflow</h2>
+
+  <h3 style="margin-top:24px">1. Select the FP file</h3>
+  <p>Use <b>Browser</b> to locate the folder, then choose the fiber photometry data (.csv)
+     recorded on the Neurophotometrics system.</p>
+
+  <h3 style="margin-top:24px">2. Preview window</h3>
+  <p>Once valid data is selected, the raw FP data populates the Preview window. Here you can
+     crop the photometry data to a window of interest, apply a zero-phase filter (filtfilt;
+     the default filter window is 4, entered as an even number, where 0 means no filter),
+     select which signal to analyze, and click <b>Update Filtered</b> to update the final dF/F
+     signal used for later analyses. After choosing the signal, you can enter a <b>MouseID</b>
+     (e.g. M01_H_S1) that will be included in exported filenames.</p>
+
+  <h3 style="margin-top:24px">3. Filtered dF/F window</h3>
+  <p>This window shows the final dF/F signal that will be z-scored and aligned to the FST data.
+     Click <b>Update Filtered</b> again to refresh the view whenever parameters change.</p>
+
+  <h3 style="margin-top:24px">4. zScore window — synchronize FST + FP</h3>
+  <p>Select the FST behavior file to populate the left table with time, code, and class data.
+     Check <b>Include FST</b> to synchronize the FST and FP recordings; the right table then
+     shows, for each bout:</p>
+  <ul>
+    <li><b>Time</b> — start time of the immobility or mobility bout.</li>
+    <li><b>Code</b> — the behavior name (immobility, mobility, etc.).</li>
+    <li><b>Class</b> — the number associated with the behavior.</li>
+    <li><b>Duration</b> — length of the bout in seconds.</li>
+    <li><b>Time_s</b> — the bout start in seconds within the photometry data (closest FP
+        timestamp to the video timestamp).</li>
+    <li><b>Index</b> — the index in the FP data where the bout starts.</li>
+  </ul>
+  <p>After checking the box, two plots appear, the first being the cropped, filtered, z-scored
+     dF/F signal with manual immobility bouts overlaid. The <b>Plot</b> button re-draws the
+     figures with any new settings.</p>
+
+  <h3 style="margin-top:24px">5. Peak Find (Habituation) window</h3>
+  <p>Set the parameters for peak-finding, which apply both to peaks across the whole trace and
+     to statistics during the habituation period:</p>
+  <ul>
+    <li><b>Habituation ends (min)</b> — how long the habituation period lasts (default 2 min).
+        The start point is where you cropped from the beginning; for example, cropping at 4800
+        frames at an effective 20 fps gives 240 s (4 min), so a 2-minute habituation runs from
+        4 to 6 minutes.</li>
+    <li><b>Minimum Peak Prominence</b> — the threshold separating authentic peaks from noise.
+        Prominence measures how much a peak stands out by its height and position. Because FP
+        signals differ between subjects (surgery, viral expression, probe location, etc.), this
+        value should be tuned per animal to maximize true peaks and minimize false ones.</li>
+    <li><b>Bin Size (Seconds)</b> — used in peak-frequency calculations (default 20 s).</li>
+  </ul>
+  <p>Clicking <b>FindPeak</b> fills the Peak Finding Data table with: <b>Time_s</b> (time of the
+     peak in seconds, including the cropped period), <b>Time_m</b> (same in minutes),
+     <b>PeakIndex</b> (index of the peak, excluding the cropped period), <b>PeakHeight</b>,
+     <b>PeakWidth</b>, and <b>Prominence</b>. It also produces a plot: the top panel shows the
+     z-scored dF/F within the habituation window; the bottom-left shows average peak amplitude
+     per bin; the bottom-right shows peak frequency per bin (peaks divided by bin length).</p>
+
+  <h3 style="margin-top:24px">6. Peak-FST window</h3>
+  <p>Clicking <b>Link Peak-FST</b> groups peak information into each FST behavioral episode.
+     Columns 1–6 are cloned from the synchronized zScore table (Time, Code, Class, Duration,
+     Time_s, Index), plus:</p>
+  <ul>
+    <li><b>Count</b> — number of peaks within the bout duration.</li>
+    <li><b>Max_amplitude</b> — maximum peak amplitude in the bout.</li>
+    <li><b>Mean_amplitude</b> — mean peak amplitude in the bout.</li>
+    <li><b>Sem_amplitude</b> — standard error of the mean amplitude.</li>
+    <li><b>Frequency</b> — peaks per second, using each bout's duration.</li>
+  </ul>
+  <p>This also produces a four-panel plot. In the left scatter plots, mobility bouts are blue
+     circles and immobility bouts are red: the top-left plots peak frequency vs. event duration
+     and the bottom-left plots peak amplitude vs. event duration, helping reveal clusters. The
+     right panels are box plots comparing mobility vs. immobility for peak frequency (top) and
+     peak amplitude (bottom), each annotated with a p-value.</p>
+
+  <h3 style="margin-top:24px">7. Align events window (peri-event analysis)</h3>
+  <p>The final window examines behavior with a peri-event method, looking at the time before and
+     after each behavior. Inputs:</p>
+  <ul>
+    <li><b>Immobility events to Remove (,)</b> — remove specific bouts by index, comma-separated
+        (e.g. 3,15,61). Note this may introduce bias.</li>
+    <li><b>before_event_time (s)</b> and <b>after_event_time (s)</b> — the window analyzed
+        before and after each bout.</li>
+    <li><b>Choose Z-Scoring Method</b> — <i>Baseline</i> (default; uses the pre-event period mean
+        applied across the trace), <i>Entire Trace</i> (standard MATLAB z-score), or <i>Median</i>
+        (z-score against the peri-event median).</li>
+    <li><b>Heatmap Sorted By</b> — None (chronological), Maximal (by peak z-score), or Duration.</li>
+    <li><b>includeNA</b> — whether to include bouts containing NaN values. NaNs arise from
+        overlapping bouts within peri-event windows; overlapping portions are replaced with NaN.
+        Checking includeNA plots mean/SEM across timepoints that contain NaNs (NaNs excluded from
+        the calculation itself); unchecking plots only NaN-free timepoints, giving a cropped graph.</li>
+  </ul>
+  <p>The event plot shows a heatmap plus a mean/SEM trace for both immobility onset and mobility
+     onset. Each heatmap row is one bout, colored by z-score (white space marks NaN locations).
+     A companion raster plot shows the peaks within each episode — line position for peak timing,
+     color for amplitude — with binned frequency and amplitude (0.5 s) summarized below. Click
+     <b>Align Event</b> to re-plot with new parameters at any time.</p>
+
+  <h3 style="margin-top:24px">8. Data Process panel</h3>
+  <p>This panel lets you lock the file-selection and Preview windows to prevent accidental
+     changes, define the Mouse ID for export, and enable <b>manual zScore</b> to apply a
+     predefined mean and standard deviation (for example, values from a previous analysis) when
+     z-scoring the whole trace.</p>
+
+  <h2 class="section">Exporting results</h2>
+  <p>When finished, click <b>Export All</b> in the Data Process panel (upper-right). Exports
+     include the selected signal name and Mouse ID in the filenames, and produce three outputs:
+     all data in an Excel file, the relevant graphs in a single PDF, and the same graphs as
+     editable MATLAB <code>.fig</code> files for later manipulation.</p>
+
+  <h2 class="section">Documentation</h2>
+  <p>The full manual (Word document) is included in the repository:</p>
+  <p><a href="https://github.com/addy9908/FST_FP_synchronization/blob/main/Manual%20for%20ZY-FP_Analysis_JHU.docx"
+        target="_blank" rel="noopener">Manual for ZY-FP_Analysis (JHU) &rarr;</a></p>
+  
+</main>
+
+<footer class="container">
+  &copy; <span id="year"></span> Zengyou Ye
+</footer>
+
+<script src="../assets/data.js"></script>
+<script src="../assets/nav.js"></script>
+</body>
+</html>

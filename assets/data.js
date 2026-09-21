@@ -24,7 +24,7 @@ const PROJECT_OPTIONS = {
 
   // If non-empty, ONLY these repos are shown (a whitelist). Leave empty to
   // show everything except hideRepos. Names are exact, case-insensitive.
-  onlyRepos: ["FED3_ZY", "iMOSS"]
+  onlyRepos: ["FED3_ZY", "iMOSS","FST_FP_synchronization"]
 };
 
 /* --- Documentation pages (always manual) ---
@@ -38,7 +38,12 @@ const DOCS = [
     repo: "iMOSS",
     title: "iMOSS",
     docPage: "projects/imoss.html"
-  }
+  },
+  {
+	repo: "FST_FP_synchronization",
+	title: "FST + Fiber Photometry Sync",
+	docPage: "projects/fst-fp-sync.html"
+	}
 ];
 
 /* --- Manual project list ---
