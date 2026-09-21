@@ -64,8 +64,12 @@
     "url": "https://suite2p.readthedocs.io/en/latest/",
     "category": "Tools",
     "desc": "Imaging analysis"
+  },
+  {
+    "title": "TinkerCAD",
+    "url": "https://www.tinkercad.com/",
+    "category": "Tools",
+    "desc": "3D Design"
   }
-  
-  
   
 ]
