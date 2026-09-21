@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Research Summary — Your Name</title>
+<title>Research Summary — Zengyou Ye</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .pub{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px;box-shadow:var(--shadow)}
@@ -22,6 +22,11 @@
   textarea{width:100%;min-height:120px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;margin-top:10px}
   details{margin-top:28px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
   summary{cursor:pointer;font-weight:600}
+  .journal-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 14px;
+    border:1px solid var(--line);border-radius:8px;padding:12px;background:#fff}
+  .journal-checks label{display:flex;align-items:center;gap:8px;margin:0;font-size:.9rem;
+    color:var(--ink);font-weight:400;cursor:pointer}
+  .journal-checks input{width:auto;margin:0}
 </style>
 </head>
 <body data-root="">
@@ -48,9 +53,16 @@
       </div>
     </div>
 
-    <label>Limit to journals (optional, one per line — full name or NLM abbreviation)</label>
-    <textarea id="journals" class="journal-input" placeholder="e.g.&#10;Nature Neuroscience&#10;J Neurosci&#10;Frontiers in Behavioral Neuroscience"></textarea>
-
+<label>Limit to journals (optional)</label>
+    <div id="journalList" class="journal-checks"></div>
+    <label style="margin-top:12px">Other journals (one per line — full name or NLM abbreviation)</label>
+    <textarea id="journals" class="journal-input" placeholder="e.g.&#10;Journal of Neurophysiology&#10;eLife"></textarea>
+    <div style="margin-top:6px">
+      <span class="toggle" id="checkAll" style="cursor:pointer;color:var(--brand);font-size:.85rem">Select all</span>
+      &nbsp;·&nbsp;
+      <span class="toggle" id="clearAll" style="cursor:pointer;color:var(--brand);font-size:.85rem">Clear all</span>
+    </div>
+	
     <div class="row">
       <div>
         <label>Max results</label>
@@ -93,7 +105,7 @@
 </main>
 
 <footer class="container">
-  &copy; <span id="year"></span> Your Name &middot; Data from NCBI PubMed (public E-utilities API).
+  &copy; <span id="year"></span> Zengyou Ye &middot; Data from NCBI PubMed (public E-utilities API).
 </footer>
 
 <script src="assets/data.js"></script>
@@ -104,6 +116,43 @@
   const $ = id => document.getElementById(id);
   const statusEl = $("status"), resultsEl = $("results");
   let lastResults = [];
+  // Curated journal checklist — edit freely. Use the exact name or NLM abbreviation
+  // that PubMed indexes under [Journal].
+  const JOURNAL_PRESETS = [
+    "Nature",
+    "Science",
+    "Cell",
+    "Nature Neuroscience",
+    "Neuron",
+    "Journal of Neuroscience",
+    "eLife",
+    "Nature Communications",
+    "PNAS",
+    "Frontiers in Behavioral Neuroscience",
+    "Biological Psychiatry",
+    "Molecular Psychiatry",
+    "Neuropsychopharmacology",
+    "Journal of Neurophysiology",
+    "Cell Reports",
+    "Current Biology"
+  ];
+
+  // Build the checklist
+  (function buildJournalChecks(){
+    const box = document.getElementById("journalList");
+    JOURNAL_PRESETS.forEach((j,i)=>{
+      const id = "jchk-"+i;
+      const label = document.createElement("label");
+      label.innerHTML = `<input type="checkbox" id="${id}" value="${j.replace(/"/g,'&quot;')}"> ${j}`;
+      box.appendChild(label);
+    });
+    document.getElementById("checkAll").addEventListener("click",()=>{
+      box.querySelectorAll("input").forEach(c=>c.checked=true);
+    });
+    document.getElementById("clearAll").addEventListener("click",()=>{
+      box.querySelectorAll("input").forEach(c=>c.checked=false);
+    });
+  })();
 
   function monthToDate(v, end){
     // v = "YYYY-MM"; PubMed wants YYYY/MM/DD
@@ -117,7 +166,9 @@
     const q = $("q").value.trim();
     const from = monthToDate($("from").value,false);
     const to = monthToDate($("to").value,true);
-    const journals = $("journals").value.split("\n").map(s=>s.trim()).filter(Boolean);
+    const checked = [...document.querySelectorAll("#journalList input:checked")].map(c=>c.value);
+    const typed = $("journals").value.split("\n").map(s=>s.trim()).filter(Boolean);
+    const journals = [...new Set([...checked, ...typed])];
 
     let term = q ? `(${q})` : "";
     if(from && to) term += `${term?" AND ":""}("${from}"[Date - Publication] : "${to}"[Date - Publication])`;
