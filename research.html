@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Summary — Your Name</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .pub{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px;box-shadow:var(--shadow)}
+  .pub h3{margin:.1rem 0 .3rem;font-size:1.05rem}
+  .pub .meta{font-size:.82rem;color:var(--muted);margin-bottom:8px}
+  .pub .summary{font-size:.92rem}
+  .pub .abstract{font-size:.9rem;color:var(--muted);margin-top:8px;display:none}
+  .pub .toggle{font-size:.82rem;cursor:pointer;color:var(--brand);margin-top:6px;display:inline-block}
+  .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .btn{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:10px 16px;font:inherit;cursor:pointer}
+  .btn:hover{background:var(--brand-2)}
+  .btn.secondary{background:var(--code);color:var(--ink);border:1px solid var(--line)}
+  .status{margin-top:16px;color:var(--muted);font-size:.9rem}
+  .chip{display:inline-block;background:#eaf1fd;color:var(--brand-2);border-radius:999px;padding:3px 10px;font-size:.78rem;margin:2px 4px 2px 0}
+  .journal-input{min-height:44px}
+  textarea{width:100%;min-height:120px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;margin-top:10px}
+  details{margin-top:28px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body data-root="">
+<main class="container">
+  <a class="backlink" href="index.html">&larr; Back to home</a>
+  <h1>Research Summary</h1>
+  <p class="note">Search PubMed by keyword, date range, and journal. Results include a condensed
+     summary of each abstract. Everything runs in your browser using PubMed's public API — no
+     account or key needed. Use “Copy for AI summary” to paste results into Claude, ChatGPT, or
+     Gemini for a deeper synthesis.</p>
+
+  <div class="calc">
+    <label>Keywords / search terms</label>
+    <input id="q" type="text" placeholder="e.g. locus coeruleus stress coping">
+
+    <div class="row">
+      <div>
+        <label>From (month/year)</label>
+        <input id="from" type="month" value="2024-06">
+      </div>
+      <div>
+        <label>To (month/year)</label>
+        <input id="to" type="month" value="2026-07">
+      </div>
+    </div>
+
+    <label>Limit to journals (optional, one per line — full name or NLM abbreviation)</label>
+    <textarea id="journals" class="journal-input" placeholder="e.g.&#10;Nature Neuroscience&#10;J Neurosci&#10;Frontiers in Behavioral Neuroscience"></textarea>
+
+    <div class="row">
+      <div>
+        <label>Max results</label>
+        <select id="retmax">
+          <option>10</option><option selected>20</option><option>40</option><option>60</option>
+        </select>
+      </div>
+      <div>
+        <label>Sort by</label>
+        <select id="sort">
+          <option value="relevance">Relevance</option>
+          <option value="pub_date">Most recent</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btnbar">
+      <button class="btn" id="searchBtn">Search PubMed</button>
+      <button class="btn secondary" id="copyBtn" style="display:none">Copy for AI summary</button>
+      <button class="btn secondary" id="csvBtn" style="display:none">Download CSV</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div id="results"></div>
+
+  <details>
+    <summary>Want automatic scheduled email updates?</summary>
+    <p style="margin-top:12px">A static GitHub Pages site can't run on a schedule or send email on
+      its own — it only runs when open in a browser. To get daily/weekly/monthly emails of new
+      papers, add a <b>GitHub Actions</b> workflow (a scheduled job in your repo) that runs this
+      same PubMed query and emails you the results.</p>
+    <p>Credentials stay safe when you use <b>encrypted GitHub Secrets</b> and an <b>email App
+      Password</b> (a revocable, single-purpose credential — never your real login password).
+      Secrets are encrypted, hidden from the repo and page source, and only decrypted inside the
+      Actions runner. Keeping the automation in a private repo adds extra safety.</p>
+    <p class="note">Ask and I'll generate the ready-to-use <code>.github/workflows/pubmed-alert.yml</code>
+      plus setup steps whenever you want to enable this.</p>
+  </details>
+</main>
+
+<footer class="container">
+  &copy; <span id="year"></span> Your Name &middot; Data from NCBI PubMed (public E-utilities API).
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+(function(){
+  const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
+  const $ = id => document.getElementById(id);
+  const statusEl = $("status"), resultsEl = $("results");
+  let lastResults = [];
+
+  function monthToDate(v, end){
+    // v = "YYYY-MM"; PubMed wants YYYY/MM/DD
+    if(!v) return "";
+    const [y,m] = v.split("-");
+    const day = end ? new Date(y, m, 0).getDate() : 1; // last day of month if end
+    return `${y}/${m}/${String(day).padStart(2,"0")}`;
+  }
+
+  function buildTerm(){
+    const q = $("q").value.trim();
+    const from = monthToDate($("from").value,false);
+    const to = monthToDate($("to").value,true);
+    const journals = $("journals").value.split("\n").map(s=>s.trim()).filter(Boolean);
+
+    let term = q ? `(${q})` : "";
+    if(from && to) term += `${term?" AND ":""}("${from}"[Date - Publication] : "${to}"[Date - Publication])`;
+    if(journals.length){
+      const jq = journals.map(j=>`"${j}"[Journal]`).join(" OR ");
+      term += `${term?" AND ":""}(${jq})`;
+    }
+    return term;
+  }
+
+  async function search(){
+    const term = buildTerm();
+    if(!term){ statusEl.textContent = "Enter at least a keyword or journal."; return; }
+    resultsEl.innerHTML = ""; lastResults = [];
+    $("copyBtn").style.display="none"; $("csvBtn").style.display="none";
+    statusEl.textContent = "Searching PubMed…";
+
+    try{
+      // 1) esearch -> PMIDs
+      const sortParam = $("sort").value === "pub_date" ? "&sort=pub+date" : "";
+      const esearch = `${EUTILS}esearch.fcgi?db=pubmed&retmode=json&retmax=${$("retmax").value}${sortParam}&term=${encodeURIComponent(term)}`;
+      const ids = await fetch(esearch).then(r=>r.json()).then(d=>d.esearchresult?.idlist||[]);
+      if(!ids.length){ statusEl.textContent = "No matching publications found. Try broadening your terms or dates."; return; }
+
+      statusEl.textContent = `Found ${ids.length}. Fetching details…`;
+      // 2) efetch -> XML with abstracts
+      const efetch = `${EUTILS}efetch.fcgi?db=pubmed&retmode=xml&id=${ids.join(",")}`;
+      const xmlText = await fetch(efetch).then(r=>r.text());
+      const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+      const arts = [...xml.querySelectorAll("PubmedArticle")];
+
+      lastResults = arts.map(a=>{
+        const title = txt(a,"ArticleTitle");
+        const journal = txt(a,"Journal > Title") || txt(a,"ISOAbbreviation");
+        const year = txt(a,"PubDate > Year") || txt(a,"PubDate > MedlineDate");
+        const pmid = txt(a,"PMID");
+        const authors = [...a.querySelectorAll("AuthorList > Author")].slice(0,4).map(au=>{
+          const ln = txt(au,"LastName"), init = txt(au,"Initials");
+          return ln ? `${ln} ${init}` : "";
+        }).filter(Boolean);
+        const abstractParts = [...a.querySelectorAll("Abstract > AbstractText")].map(n=>{
+          const label = n.getAttribute("Label");
+          return (label?label+": ":"") + n.textContent;
+        });
+        const abstract = abstractParts.join(" ");
+        return { title, journal, year, pmid, authors, abstract };
+      });
+
+      render();
+      statusEl.textContent = `Showing ${lastResults.length} publication(s).`;
+      $("copyBtn").style.display=""; $("csvBtn").style.display="";
+    }catch(err){
+      statusEl.textContent = "Something went wrong contacting PubMed. Please try again in a moment.";
+    }
+  }
+
+  function txt(node, sel){
+    const el = node.querySelector(sel);
+    return el ? el.textContent.trim() : "";
+  }
+
+  // Extractive summary: take the most informative sentences from the abstract.
+  function summarize(abstract){
+    if(!abstract) return "No abstract available.";
+    const sentences = abstract.replace(/\s+/g," ").match(/[^.!?]+[.!?]+/g) || [abstract];
+    if(sentences.length <= 3) return abstract;
+    // Prefer sentences containing result-signal words; always keep first + last.
+    const cues = /(result|found|show|demonstrat|conclu|suggest|significant|increas|decreas|reduc|associat|effect)/i;
+    const picked = [sentences[0]];
+    sentences.slice(1,-1).forEach(s=>{ if(cues.test(s) && picked.length<3) picked.push(s); });
+    if(picked.length<3) picked.push(sentences[sentences.length-1]);
+    return picked.join(" ").trim();
+  }
+
+  function render(){
+    resultsEl.innerHTML = "";
+    lastResults.forEach((p,i)=>{
+      const div = document.createElement("div");
+      div.className = "pub";
+      const auth = p.authors.length ? p.authors.join(", ") + (p.authors.length>=4?" et al.":"") : "";
+      div.innerHTML =
+        `<h3><a href="https://pubmed.ncbi.nlm.nih.gov/${p.pmid}/" target="_blank" rel="noopener">${esc(p.title)}</a></h3>
+         <div class="meta">${esc(auth)}${auth?" · ":""}<i>${esc(p.journal)}</i> · ${esc(p.year)} · PMID ${p.pmid}</div>
+         <div class="summary"><b>Key points:</b> ${esc(summarize(p.abstract))}</div>
+         <span class="toggle" data-i="${i}">Show full abstract ▾</span>
+         <div class="abstract" id="abs-${i}">${esc(p.abstract||"No abstract available.")}</div>`;
+      resultsEl.appendChild(div);
+    });
+    resultsEl.querySelectorAll(".toggle").forEach(t=>{
+      t.addEventListener("click",()=>{
+        const box = $("abs-"+t.dataset.i);
+        const open = box.style.display==="block";
+        box.style.display = open?"none":"block";
+        t.textContent = open?"Show full abstract ▾":"Hide abstract ▴";
+      });
+    });
+  }
+
+  function esc(s){ return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+  // Copy a clean prompt for pasting into an AI
+  function copyForAI(){
+    const header = `Please summarize the key findings across these ${lastResults.length} publications, group them by theme, and note any conflicting results.\n\n`;
+    const body = lastResults.map((p,i)=>{
+      const auth = p.authors.join(", ");
+      return `${i+1}. ${p.title}\n   ${auth} — ${p.journal} (${p.year}). PMID ${p.pmid}\n   Abstract: ${p.abstract||"(none)"}\n`;
+    }).join("\n");
+    navigator.clipboard.writeText(header+body).then(()=>{
+      statusEl.textContent = "Copied! Paste into Claude, ChatGPT, or Gemini for a full summary.";
+    },()=>{
+      statusEl.textContent = "Couldn't copy automatically — select the text manually.";
+    });
+  }
+
+  function downloadCSV(){
+    const rows = [["Title","Authors","Journal","Year","PMID","Abstract"]];
+    lastResults.forEach(p=>rows.push([p.title,p.authors.join("; "),p.journal,p.year,p.pmid,p.abstract]));
+    const csv = rows.map(r=>r.map(c=>`"${(c||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv],{type:"text/csv"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "pubmed_results.csv"; a.click();
+  }
+
+  $("searchBtn").addEventListener("click", search);
+  $("q").addEventListener("keydown", e=>{ if(e.key==="Enter") search(); });
+  $("copyBtn").addEventListener("click", copyForAI);
+  $("csvBtn").addEventListener("click", downloadCSV);
+})();
+</script>
+</body>
+</html>
