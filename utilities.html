@@ -15,6 +15,7 @@
   <div class="tabs">
     <div class="tab active" data-tab="calc-solution">Solution Preparation</div>
     <div class="tab" data-tab="calc-pump">Syringe Pump (Med Associates)</div>
+	<div class="tab" data-tab="calc-ephys">Electrophysiology</div>
   </div>
 
   <!-- A. Solution prep -->
@@ -88,6 +89,131 @@
     <p class="note">Equation: <code>Flow (mL/min) = k × RPM × A</code>, where <code>A = π(d/2)²</code>.
       The constant <code>k = 0.19538</code> and RPM are printed on your pump's calibration sheet, so both
       are editable here. Verify against your calibration sheet before use.</p>
+  </div>
+  
+  <!-- C. Electrophysiology -->
+  <div class="calc page-tab" id="calc-ephys" style="display:none;border-top-left-radius:0">
+    <p>Reversal potentials (Nernst &amp; GHK), plus liquid junction potential (Henderson)
+       computation and correction. All values are editable; equations and inputs are shown
+       under each result.</p>
+
+    <div class="row">
+      <div>
+        <label>Temperature (°C)</label>
+        <input id="ephysTemp" type="number" step="any" value="22">
+      </div>
+      <div></div>
+    </div>
+
+    <!-- ---- Nernst ---- -->
+    <h3 style="margin-top:24px">Nernst — single-ion reversal potential</h3>
+    <div class="row">
+      <div>
+        <label>Ion charge z (e.g. +1 Na⁺/K⁺, +2 Ca²⁺, −1 Cl⁻)</label>
+        <input id="nernstZ" type="number" step="1" value="1">
+      </div>
+      <div>
+        <label>Concentration outside [out]</label>
+        <input id="nernstOut" type="number" step="any" placeholder="e.g. 145">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Concentration inside [in]</label>
+        <input id="nernstIn" type="number" step="any" placeholder="e.g. 12">
+      </div>
+      <div>
+        <label>Concentration unit (any, as long as both match)</label>
+        <select id="nernstUnit">
+          <option value="mM">mM</option>
+          <option value="M">M</option>
+        </select>
+      </div>
+    </div>
+    <div class="result" id="nernstResult" style="display:none">
+      Reversal potential: <span class="big" id="nernstVal"></span>
+    </div>
+    <div class="workings" id="nernstWork" style="display:none"></div>
+
+    <!-- ---- GHK ---- -->
+    <h3 style="margin-top:28px">GHK — multi-ion resting/reversal potential</h3>
+    <p class="note">Enter permeabilities (relative is fine, e.g. PK=1) and concentrations (mM).
+       Na⁺/K⁺ use the standard cation form; Cl⁻ is entered with in/out swapped internally per GHK.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+      <thead><tr style="text-align:left">
+        <th style="padding:6px">Ion</th><th style="padding:6px">Permeability P</th>
+        <th style="padding:6px">[out] mM</th><th style="padding:6px">[in] mM</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="padding:6px">K⁺</td>
+          <td style="padding:6px"><input id="ghk_PK" type="number" step="any" value="1"></td>
+          <td style="padding:6px"><input id="ghk_Ko" type="number" step="any" value="5"></td>
+          <td style="padding:6px"><input id="ghk_Ki" type="number" step="any" value="140"></td>
+        </tr>
+        <tr>
+          <td style="padding:6px">Na⁺</td>
+          <td style="padding:6px"><input id="ghk_PNa" type="number" step="any" value="0.04"></td>
+          <td style="padding:6px"><input id="ghk_Nao" type="number" step="any" value="145"></td>
+          <td style="padding:6px"><input id="ghk_Nai" type="number" step="any" value="12"></td>
+        </tr>
+        <tr>
+          <td style="padding:6px">Cl⁻</td>
+          <td style="padding:6px"><input id="ghk_PCl" type="number" step="any" value="0.45"></td>
+          <td style="padding:6px"><input id="ghk_Clo" type="number" step="any" value="110"></td>
+          <td style="padding:6px"><input id="ghk_Cli" type="number" step="any" value="10"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="result" id="ghkResult" style="display:none;margin-top:14px">
+      Membrane potential (Vm): <span class="big" id="ghkVal"></span>
+    </div>
+    <div class="workings" id="ghkWork" style="display:none"></div>
+
+    <!-- ---- LJP (Henderson) ---- -->
+    <h3 style="margin-top:28px">Liquid junction potential (Henderson)</h3>
+    <p class="note">Add each ion present at the pipette↔bath junction with its concentration in
+       the pipette and the bath (mM). Mobilities and charges are prefilled and editable.
+       LJP is reported as V(pipette) − V(bath).</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.9rem" id="ljpTable">
+      <thead><tr style="text-align:left">
+        <th style="padding:6px">Ion</th><th style="padding:6px">z</th>
+        <th style="padding:6px">mobility (×10⁻⁴)</th>
+        <th style="padding:6px">pipette mM</th><th style="padding:6px">bath mM</th>
+      </tr></thead>
+      <tbody id="ljpBody"><!-- filled by JS --></tbody>
+    </table>
+    <button type="button" id="ljpAddRow" class="tab" style="margin-top:10px;border-radius:8px">+ Add ion</button>
+
+    <div class="result" id="ljpResult" style="display:none;margin-top:14px">
+      Liquid junction potential: <span class="big" id="ljpVal"></span>
+    </div>
+    <div class="workings" id="ljpWork" style="display:none"></div>
+
+    <!-- ---- Correction ---- -->
+    <h3 style="margin-top:28px">Apply LJP correction</h3>
+    <div class="row">
+      <div>
+        <label>Measured membrane potential Vm (mV)</label>
+        <input id="corrVm" type="number" step="any" placeholder="e.g. -65">
+      </div>
+      <div>
+        <label>LJP to subtract (mV)</label>
+        <input id="corrLJP" type="number" step="any" placeholder="auto-fills from Henderson, or type your measured value">
+      </div>
+    </div>
+    <label style="display:inline-flex;align-items:center;gap:8px;margin-top:8px">
+      <input type="checkbox" id="corrUseComputed" style="width:auto" checked>
+      Use the computed Henderson LJP above
+    </label>
+    <div class="result" id="corrResult" style="display:none;margin-top:14px">
+      Corrected Vm: <span class="big" id="corrVal"></span>
+    </div>
+    <div class="workings" id="corrWork" style="display:none"></div>
+
+    <p class="note" style="margin-top:20px">Convention: LJP = V(pipette) − V(bath);
+      corrected Vm = measured Vm − LJP. Verify against your rig and reference
+      (e.g. Barry &amp; Lynch; JPCalc/Clampex conventions) before relying on values.</p>
   </div>
 </main>
 
