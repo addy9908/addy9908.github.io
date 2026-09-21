@@ -50,12 +50,7 @@ const DOCS = [
    repo  : full GitHub repository URL
    pages : live GitHub Pages URL, or "" if none */
 const PROJECTS = [
-  {
-    name: "example-project",
-    blurb: "A short description of the project.",
-    repo: `https://github.com/${GH_USER}/example-project`,
-    pages: `https://${GH_USER}.github.io/example-project`
-  }
+
 ];
 
 /* --- Syringe presets ---
