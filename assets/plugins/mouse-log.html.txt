@@ -1,0 +1,211 @@
+<!-- ============================================================= -->
+<!-- PASTE INTO: Widget Manager -> Widget HTML Editor -> Source     -->
+<!-- No <script> here. Every field has a lowercase name = its id.    -->
+<!-- ============================================================= -->
+
+<style>
+  .mw-wrap { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color:#23303c; max-width:940px; }
+  .mw-wrap h3 { font-size:14px; color:#1f5578; border-bottom:1px solid #d9dee6; padding-bottom:5px; margin:14px 0 10px; text-transform:uppercase; letter-spacing:.03em; }
+  .mw-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .mw-field { display:flex; flex-direction:column; margin-bottom:6px; }
+  .mw-field.mw-span2 { grid-column:span 2; }
+  .mw-field.mw-span3 { grid-column:1 / -1; }
+  .mw-field label { font-size:11px; font-weight:bold; color:#6b7885; margin-bottom:3px; }
+  .mw-wrap input, .mw-wrap select, .mw-wrap textarea {
+    font-size:13px; padding:6px 8px; border:1px solid #d9dee6; border-radius:4px; width:100%; font-family:inherit;
+  }
+  .mw-wrap textarea { min-height:40px; resize:vertical; }
+  .mw-btn { font-size:12px; font-weight:bold; padding:7px 13px; border:none; border-radius:4px; background:#2c6e9c; color:#fff; cursor:pointer; }
+  .mw-btn.sec { background:#eef2f6; color:#1f5578; border:1px solid #d9dee6; }
+  .mw-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+  .mw-table th, .mw-table td { border:1px solid #d9dee6; padding:6px 8px; text-align:left; vertical-align:top; }
+  .mw-table th { background:#f4f6f9; color:#6b7885; font-size:11px; text-transform:uppercase; }
+  .mw-note { font-size:11px; color:#6b7885; margin-top:4px; }
+  .mw-msg { font-size:12px; font-weight:bold; margin-left:8px; }
+  .mw-checks { border:1px solid #d9dee6; border-radius:4px; padding:6px 8px; max-height:120px; overflow:auto; background:#fff; }
+  .mw-checks label { display:block; font-size:12px; font-weight:normal; color:#23303c; margin:2px 0; }
+  .mw-checks input { width:auto; margin-right:6px; }
+  .mw-grouphdr { background:#eef2f6; font-weight:bold; color:#1f5578; }
+  .mw-bar { margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .mw-thumb { position:relative; display:inline-block; }
+  .mw-thumb img { width:56px; height:56px; object-fit:cover; border:1px solid #d9dee6; border-radius:4px; cursor:pointer; display:block; }
+  .mw-thumb .mw-thumbx { position:absolute; top:-6px; right:-6px; background:#c0392b; color:#fff; border:none; border-radius:50%; width:16px; height:16px; font-size:10px; line-height:14px; cursor:pointer; padding:0; }
+  .mw-logthumb img { width:44px; height:44px; object-fit:cover; border:1px solid #d9dee6; border-radius:3px; cursor:pointer; margin:2px 2px 0 0; }
+  .mw-pmrow { display:flex; align-items:center; gap:8px; margin:3px 0; }
+  .mw-pmrow .mw-pmlabel { font-size:11px; font-weight:bold; color:#1f5578; min-width:120px; }
+  .mw-pmrow input { flex:1; }
+  /* Kill the decorative calendar image LabArchives injects for date fields */
+  #m_dob, #e_date,
+  #m_dob + img, #e_date + img,
+  .mw-field img { background-image:none !important; }
+  .mw-field img { display:none !important; }
+</style>
+
+<div class="mw-wrap">
+
+  <!-- ================= ADD MOUSE ================= -->
+  <h3>Add / Register Mouse</h3>
+  <div class="mw-grid">
+    <div class="mw-field"><label>Mouse ID</label><input type="text" name="m_id" id="m_id" placeholder="M-0421"></div>
+    <div class="mw-field"><label>Ear Tag</label><input type="text" name="m_eartag" id="m_eartag" placeholder="3L / 2R"></div>
+    <div class="mw-field"><label>Sex</label>
+      <select name="m_sex" id="m_sex">
+        <option value="">--</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="unknown">Unknown</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Cage Number</label><input type="text" name="m_cage" id="m_cage" placeholder="C-117"></div>
+    <div class="mw-field"><label>Group / Batch</label><input type="text" name="m_group" id="m_group" placeholder="batch1"></div>
+    <div class="mw-field"><label>Date of Birth</label><input type="text" name="m_dob" id="m_dob" placeholder="MM/DD/YYYY"></div>
+    <div class="mw-field"><label>Strain / Background</label><input type="text" name="m_strain" id="m_strain" placeholder="C57BL/6J"></div>
+    <div class="mw-field mw-span2"><label>Genotype</label>
+      <select name="m_genotype" id="m_genotype">
+        <option value="">-- select --</option>
+        <option value="wt">WT</option>
+        <option value="GluT2-Cre">GluT2-Cre</option>
+        <option value="VGAT-cre">VGAT-cre</option>
+        <option value="TH-Cre">TH-Cre</option>
+        <option value="ORX-Cre">ORX-Cre</option>
+        <option value="VGluT2-Cre-tdt">VGluT2-Cre-tdt</option>
+        <option value="VGAT-cre-tdt">VGAT-cre-tdt</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Genotype (if Other)</label><input type="text" name="m_genotypeother" id="m_genotypeother" placeholder="specify"></div>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="addmousebtn">Add Mouse</button>
+    <button type="button" class="mw-btn sec" id="clearmousebtn">Clear</button>
+    <span class="mw-msg" id="mousemsg"></span>
+  </div>
+
+  <!-- ================= MOUSE ROSTER ================= -->
+  <h3>Mouse Roster</h3>
+  <table class="mw-table" id="rostertable">
+    <thead>
+      <tr>
+        <th style="width:90px;">Mouse ID</th><th style="width:70px;">Ear Tag</th><th style="width:60px;">Sex</th>
+        <th style="width:70px;">Cage</th><th style="width:70px;">Group</th><th style="width:90px;">DOB</th><th style="width:70px;">Age</th>
+        <th>Genotype</th><th style="width:70px;">Strain</th><th style="width:90px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="rosterbody">
+      <tr><td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ================= ADD EVENT ================= -->
+  <h3>Add Event</h3>
+  <div class="mw-grid">
+    <div class="mw-field"><label>Date</label><input type="text" name="e_date" id="e_date" placeholder="MM/DD/YYYY"></div>
+    <div class="mw-field"><label>Event Type</label>
+      <select name="e_type" id="e_type">
+        <option value="weaning">Weaning</option>
+        <option value="genotyping">Genotyping</option>
+        <option value="weight">Weight measurement</option>
+        <option value="dosing">Treatment / Dosing</option>
+        <option value="surgery">Surgery</option>
+        <option value="Handling">Handling</option>
+        <option value="Add mini2P base">Add mini2P base</option>
+        <option value="Imaging">Imaging</option>
+        <option value="Perfusion">Perfusion</option>
+        <option value="Slicing">Slicing</option>
+        <option value="behavior">Behavioral test</option>
+        <option value="tissue">Tissue collection</option>
+        <option value="breeding">Breeding setup</option>
+        <option value="health">Health observation</option>
+        <option value="transfer">Transfer / Re-cage</option>
+        <option value="endpoint">Euthanasia / Endpoint</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Protocol / IACUC #</label><input type="text" name="e_protocol" id="e_protocol" placeholder="IACUC-2024-118"></div>
+    <div class="mw-field"><label>Experimenter / User</label><input type="text" name="e_user" id="e_user" placeholder="initials or name"></div>
+    <div class="mw-field mw-span2"><label>File Storage Location</label><input type="text" name="e_fileloc" id="e_fileloc" placeholder="path, drive, or URL where data is stored"></div>
+    <div class="mw-field mw-span3"><label>Apply to which mice? (select one or more)</label>
+      <div class="mw-bar" style="margin-top:0;margin-bottom:6px;">
+        <select id="e_groupsel" name="e_groupsel" style="width:auto;min-width:150px;">
+          <option value="">-- add a group --</option>
+        </select>
+        <button type="button" class="mw-btn sec" id="e_addgroupbtn">Add Group's Mice</button>
+        <button type="button" class="mw-btn sec" id="e_selallbtn">Select All</button>
+        <button type="button" class="mw-btn sec" id="e_clrallbtn">Clear All</button>
+      </div>
+      <div class="mw-checks" id="e_micechecks">
+        <span style="color:#6b7885;font-style:italic;">Add mice above first.</span>
+      </div>
+    </div>
+    <div class="mw-field mw-span3"><label>Common Details (applies to all selected mice)</label>
+      <textarea name="e_details" id="e_details" placeholder="Shared notes: dose, protocol step, operator initials..."></textarea>
+    </div>
+    <div class="mw-field mw-span3" id="e_permousewrap" style="display:none;">
+      <label>Per-mouse Details (optional, for the mice checked above)</label>
+      <div id="e_permouse"></div>
+    </div>
+    <div class="mw-field mw-span3"><label>Photos (auto-shrunk to thumbnails; you can add more than one)</label>
+      <input type="file" name="e_photos" id="e_photos" accept="image/*" multiple>
+      <div id="e_photoprev" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="addeventbtn">Add Event</button>
+    <button type="button" class="mw-btn sec" id="cleareventbtn">Clear</button>
+    <span class="mw-msg" id="eventmsg"></span>
+  </div>
+
+  <!-- ================= EVENT LOG + FILTER ================= -->
+  <h3>Event Log</h3>
+  <div class="mw-bar">
+    <label style="font-size:11px;font-weight:bold;color:#6b7885;">Filter by mouse:</label>
+    <select name="filtermouse" id="filtermouse" style="width:auto;min-width:160px;">
+      <option value="__all__">All mice (grouped)</option>
+    </select>
+    <button type="button" class="mw-btn sec" id="exportbtn">Generate CSV Export</button>
+  </div>
+  <table class="mw-table" id="logtable">
+    <thead>
+      <tr><th style="width:95px;">Date</th><th style="width:150px;">Type</th><th>Details</th><th style="width:120px;">Protocol</th><th style="width:90px;">Actions</th></tr>
+    </thead>
+    <tbody id="logbody">
+      <tr><td colspan="5" style="text-align:center;color:#6b7885;font-style:italic;">No events logged yet.</td></tr>
+    </tbody>
+  </table>
+  <div class="mw-note">Events are grouped by mouse. Use the filter to view a single animal. Age is auto-calculated from DOB.</div>
+
+  <!-- ================= EXPORT BOX ================= -->
+  <div class="mw-field mw-span3" id="exportwrap" style="display:none;margin-top:10px;">
+    <label>CSV export — click inside, Select All (Ctrl/Cmd+A), Copy, paste into a spreadsheet or a LabArchives attachment</label>
+    <textarea name="exportbox" id="exportbox" readonly style="min-height:120px;font-family:monospace;font-size:11px;"></textarea>
+    <div class="mw-bar">
+      <button type="button" class="mw-btn sec" id="copyexportbtn">Copy to Clipboard</button>
+      <button type="button" class="mw-btn sec" id="downloadexportbtn">Try Download</button>
+      <span class="mw-msg" id="exportmsg"></span>
+    </div>
+  </div>
+
+  <!-- ================= IMPORT / MERGE ================= -->
+  <h3>Import / Merge CSV</h3>
+  <div class="mw-field mw-span3">
+    <label>Paste CSV here (same column format as the export), then set the options below and click Import</label>
+    <textarea name="importbox" id="importbox" placeholder="Mouse ID,Ear Tag,Sex,Cage,Group,DOB,Age,Genotype,Strain,Event Date,Event Type,Experimenter,File Location,Protocol,Details,Mouse Note" style="min-height:110px;font-family:monospace;font-size:11px;"></textarea>
+  </div>
+  <div class="mw-bar">
+    <span style="font-size:11px;font-weight:bold;color:#6b7885;">If a Mouse ID already exists:</span>
+    <label style="font-weight:normal;"><input type="radio" name="dupmouse" value="skip" checked style="width:auto;margin-right:4px;">Skip (keep mine)</label>
+    <label style="font-weight:normal;"><input type="radio" name="dupmouse" value="overwrite" style="width:auto;margin-right:4px;">Overwrite from import</label>
+  </div>
+  <div class="mw-bar">
+    <span style="font-size:11px;font-weight:bold;color:#6b7885;">If an event already exists:</span>
+    <label style="font-weight:normal;"><input type="radio" name="dupevent" value="keep" checked style="width:auto;margin-right:4px;">Keep original (skip)</label>
+    <label style="font-weight:normal;"><input type="radio" name="dupevent" value="overwrite" style="width:auto;margin-right:4px;">Overwrite from import</label>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="importbtn">Import / Merge</button>
+    <button type="button" class="mw-btn sec" id="clearimportbtn">Clear Box</button>
+    <span class="mw-msg" id="importmsg"></span>
+  </div>
+  <div class="mw-note">Import expects the exported column order. An "event" is considered the same if Mouse ID + Event Date + Event Type match.</div>
+
+</div>
