@@ -959,33 +959,50 @@ my_widget_script =
   },
 
   // ================= CSV import / merge =================
-  // Parse CSV text into an array of row-arrays. Handles quoted fields,
-  // escaped quotes (""), and both \r\n and \n line endings.
-  mw_parseCsv: function (text) {
-    var rows = [];
-    var row = [];
+  // Detect the delimiter of a line: tab (from Excel/Sheets copy) or comma.
+  mw_detectDelim: function (line) {
+    var tabs = line.split('\t').length - 1;
+    var commas = line.split(',').length - 1;
+    return (tabs >= commas && tabs > 0) ? '\t' : ',';
+  },
+
+  // Parse one delimited line, honoring quoted fields and "" escapes.
+  mw_parseLine: function (line, delim) {
+    var out = [];
     var field = '';
     var inQ = false;
-    var i = 0;
-    var c, next;
-    text = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    for (i = 0; i < text.length; i++) {
-      c = text.charAt(i);
+    var i, c, next;
+    for (i = 0; i < line.length; i++) {
+      c = line.charAt(i);
       if (inQ) {
         if (c === '"') {
-          next = text.charAt(i + 1);
+          next = line.charAt(i + 1);
           if (next === '"') { field = field + '"'; i++; }
           else { inQ = false; }
         } else { field = field + c; }
       } else {
         if (c === '"') { inQ = true; }
-        else if (c === ',') { row.push(field); field = ''; }
-        else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+        else if (c === delim) { out.push(field); field = ''; }
         else { field = field + c; }
       }
     }
-    // last field/row
-    if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+    out.push(field);
+    return out;
+  },
+
+  // Parse full text into array of row-arrays. Delimiter detected from the
+  // header (first non-empty) line, so tab- and comma-separated both work.
+  mw_parseCsv: function (text) {
+    text = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    var lines = text.split('\n');
+    var rows = [];
+    var delim = null;
+    var i;
+    for (i = 0; i < lines.length; i++) {
+      if (this.mw_trim(lines[i]) === '') { continue; }
+      if (delim === null) { delim = this.mw_detectDelim(lines[i]); }
+      rows.push(this.mw_parseLine(lines[i], delim));
+    }
     return rows;
   },
 
@@ -1000,45 +1017,105 @@ my_widget_script =
     return a.date === b.date && a.type === b.type;
   },
 
+  // Normalize a header cell for matching: lowercase, strip non-alphanumerics.
+  mw_normHdr: function (s) {
+    return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  },
+
+  // Build a name->index map from the header row using known aliases.
+  mw_mapHeaders: function (headerRow) {
+    var aliases = {
+      id: ['mouseid', 'id', 'mouse'],
+      eartag: ['eartag', 'tag'],
+      sex: ['sex'],
+      cage: ['cage', 'cagenumber'],
+      group: ['group', 'batch', 'groupbatch'],
+      dob: ['dob', 'dateofbirth', 'birth'],
+      genotype: ['genotype'],
+      strain: ['strain', 'background', 'strainbackground'],
+      edate: ['eventdate', 'date'],
+      etype: ['eventtype', 'type', 'event'],
+      user: ['experimenter', 'user', 'operator'],
+      fileloc: ['filelocation', 'fileloc', 'filestoragelocation', 'file'],
+      protocol: ['protocol', 'iacuc', 'protocoliacuc'],
+      details: ['details', 'commondetails', 'notes'],
+      note: ['mousenote', 'note', 'permousenote', 'permousedetails']
+    };
+    var map = {};
+    var norm = [];
+    var i;
+    for (i = 0; i < headerRow.length; i++) { norm.push(this.mw_normHdr(headerRow[i])); }
+
+    var key, j, k;
+    for (key in aliases) {
+      if (!aliases.hasOwnProperty(key)) { continue; }
+      map[key] = -1;
+      for (j = 0; j < aliases[key].length && map[key] === -1; j++) {
+        for (k = 0; k < norm.length; k++) {
+          if (norm[k] === aliases[key][j]) { map[key] = k; break; }
+        }
+      }
+    }
+    return map;
+  },
+
+  // Safe cell fetch by mapped index.
+  mw_cell: function (row, idx) {
+    if (idx < 0 || idx >= row.length) { return ''; }
+    return this.mw_trim(row[idx] || '');
+  },
+
   mw_importCsv: function () {
     var raw = document.getElementById('importbox').value;
-    if (!this.mw_trim(raw)) { this.mw_msg('importmsg', 'Paste CSV first.', true); return; }
+    if (!this.mw_trim(raw)) { this.mw_msg('importmsg', 'Paste CSV or Excel rows first.', true); return; }
 
     var dupMouse = this.mw_getRadio('dupmouse');   // skip | overwrite
     var dupEvent = this.mw_getRadio('dupevent');   // keep | overwrite
 
     var rows = this.mw_parseCsv(raw);
-    if (rows.length < 2) { this.mw_msg('importmsg', 'No data rows found.', true); return; }
+    if (rows.length < 1) { this.mw_msg('importmsg', 'No rows found.', true); return; }
 
-    // Detect a header row and skip it.
+    // Decide whether row 0 is a header. If it contains a recognizable
+    // "mouse id" style column, treat it as a header and map by name.
+    var map = this.mw_mapHeaders(rows[0]);
+    var hasHeader = (map.id >= 0 || map.edate >= 0 || map.etype >= 0);
     var start = 0;
-    var first = (rows[0][0] || '').toLowerCase();
-    if (first.indexOf('mouse') !== -1) { start = 1; }
 
-    // Column order matches the export:
-    // 0 ID,1 EarTag,2 Sex,3 Cage,4 Group,5 DOB,6 Age,7 Genotype,8 Strain,
-    // 9 EventDate,10 EventType,11 Experimenter,12 FileLocation,13 Protocol,14 Details,15 MouseNote
+    if (hasHeader) {
+      start = 1;
+    } else {
+      // No header: fall back to the known export column order.
+      map = { id:0, eartag:1, sex:2, cage:3, group:4, dob:5, genotype:7, strain:8,
+              edate:9, etype:10, user:11, fileloc:12, protocol:13, details:14, note:15 };
+    }
+
+    if (map.id < 0) {
+      this.mw_msg('importmsg', 'Could not find a "Mouse ID" column. Check the header row.', true);
+      return;
+    }
+
     var added = { mice: 0, events: 0 };
     var updated = { mice: 0, events: 0 };
     var skipped = { mice: 0, events: 0 };
+    var badrows = 0;
 
     var r;
     for (r = start; r < rows.length; r++) {
       var col = rows[r];
       if (!col || col.length === 0) { continue; }
-      var id = this.mw_trim(col[0] || '');
-      if (!id) { continue; }
+      var id = this.mw_cell(col, map.id);
+      if (!id) { badrows++; continue; }
 
       // ---- mouse ----
       var incoming = {
         id: id,
-        eartag: this.mw_trim(col[1] || ''),
-        sex: this.mw_trim(col[2] || ''),
-        cage: this.mw_trim(col[3] || ''),
-        group: this.mw_trim(col[4] || ''),
-        dob: this.mw_trim(col[5] || ''),
-        strain: this.mw_trim(col[8] || ''),
-        genotype: this.mw_trim(col[7] || '')
+        eartag: this.mw_cell(col, map.eartag),
+        sex: this.mw_cell(col, map.sex),
+        cage: this.mw_cell(col, map.cage),
+        group: this.mw_cell(col, map.group),
+        dob: this.mw_cell(col, map.dob),
+        strain: this.mw_cell(col, map.strain),
+        genotype: this.mw_cell(col, map.genotype)
       };
       var existing = this.mw_findMouse(id);
       if (!existing) {
@@ -1058,24 +1135,24 @@ my_widget_script =
         skipped.mice++;
       }
 
-      // ---- event (only if this row carries event data) ----
-      var edate = this.mw_trim(col[9] || '');
-      var etype = this.mw_trim(col[10] || '');
+      // ---- event (only if the row carries event data) ----
+      var edate = this.mw_cell(col, map.edate);
+      var etype = this.mw_cell(col, map.etype);
       if (edate || etype) {
+        var incNote = this.mw_cell(col, map.note);
         var incEv = {
           date: edate,
           type: etype,
-          user: this.mw_trim(col[11] || ''),
-          fileloc: this.mw_trim(col[12] || ''),
-          protocol: this.mw_trim(col[13] || ''),
-          details: this.mw_trim(col[14] || ''),
+          user: this.mw_cell(col, map.user),
+          fileloc: this.mw_cell(col, map.fileloc),
+          protocol: this.mw_cell(col, map.protocol),
+          details: this.mw_cell(col, map.details),
           photos: [],
           perMouse: {},
           mice: [id]
         };
-        var incNote = this.mw_trim(col[15] || '');
         if (incNote) { incEv.perMouse[id] = incNote; }
-        // find an existing event for THIS mouse matching date+type
+
         var match = null;
         var e;
         for (e = 0; e < this.mw_events.length; e++) {
@@ -1111,6 +1188,7 @@ my_widget_script =
     this.mw_renderAll();
     var summary = 'Mice +' + added.mice + ' / upd ' + updated.mice + ' / skip ' + skipped.mice +
                   '  |  Events +' + added.events + ' / upd ' + updated.events + ' / skip ' + skipped.events;
+    if (badrows > 0) { summary = summary + '  (' + badrows + ' row(s) had no Mouse ID)'; }
     this.mw_msg('importmsg', summary, false);
   },
 
