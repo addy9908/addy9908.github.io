@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mouse Lifespan Event Log — LabArchives Plugin</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .codeblock{position:relative;margin-top:12px}
+  .codeblock pre{background:#0f1720;color:#e6edf3;border-radius:10px;padding:16px;
+    overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem;
+    line-height:1.5;max-height:520px;margin:0}
+  .copybtn{position:absolute;top:10px;right:10px;background:#243040;color:#e6edf3;border:1px solid #38424f;
+    border-radius:6px;padding:5px 10px;font-size:.78rem;cursor:pointer}
+  .copybtn:hover{background:#2e3c4d}
+  .shots{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:14px}
+  .shot figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;box-shadow:var(--shadow)}
+  .shot img{width:100%;display:block;background:#f0f2f5}
+  .shot figcaption{padding:10px 14px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line)}
+  .placeholder{display:flex;align-items:center;justify-content:center;min-height:200px;color:var(--muted);
+    font-size:.9rem;text-align:center;padding:20px;background:#f0f2f5}
+  .codehead{font-weight:600;margin-top:22px;display:flex;align-items:center;gap:8px}
+  .codehead .pill{font-size:.72rem;background:#eaf1fd;color:var(--brand-2);border-radius:999px;padding:2px 9px}
+</style>
+</head>
+<body data-root="../">
+<main class="container">
+  <a class="backlink" href="../index.html">&larr; Back to home</a>
+
+  <span class="tag">LabArchives plugin</span>
+  <h1>Mouse Lifespan Event Log</h1>
+  <p class="note">A LabArchives notebook widget for logging the full lifespan of a mouse —
+     recording key identifiers and every event across its life, with dated, detailed notes.
+     Especially useful for tracking behavioral testing timelines.</p>
+
+  <h2 class="section">Overview</h2>
+  <p>This plugin provides a structured event log for individual research mice inside a LabArchives
+     electronic lab notebook. It captures each animal's core identifiers — Mouse ID, date of birth,
+     and genotype — and maintains a running, dated record of every event in the animal's lifespan
+     (procedures, behavioral tests, observations, and so on), each with a detailed note. The widget
+     has a <b>display mode</b> that presents a clean, read-only summary of the animal and its event
+     history, and an <b>edit mode</b> for adding or updating entries.</p>
+
+  <h2 class="section">Features</h2>
+  <ul>
+    <li>Records core mouse identifiers: <b>Mouse ID</b>, <b>date of birth</b>, and <b>genotype</b>.</li>
+    <li>Chronological event log — each entry has a date, an event, and a detailed note.</li>
+    <li>Designed with behavioral testing timelines in mind.</li>
+    <li>Separate <b>display</b> and <b>edit</b> modes for clean viewing and easy data entry.</li>
+    <li>Two-part, self-contained HTML + JavaScript — paste directly into a LabArchives widget.</li>
+  </ul>
+
+  <h2 class="section">Screenshots</h2>
+  <div class="shots">
+    <div class="shot">
+      <figure>
+        <!-- Replace the placeholder below with your image:
+             <img src="../assets/img/labarchives-display.png" alt="Display mode"> -->
+        <div class="placeholder">Display mode screenshot<br>
+          <span style="font-size:.8rem"><img src="../assets/img/labarchives-display.png" alt="Display mode"></span></div>
+        <figcaption><b>Display mode</b> — read-only summary of the mouse and its lifespan events.</figcaption>
+      </figure>
+    </div>
+    <div class="shot">
+      <figure>
+        <!-- <img src="../assets/img/labarchives-edit.png" alt="Edit mode"> -->
+        <div class="placeholder">Edit mode screenshot<br>
+          <span style="font-size:.8rem"><img src="../assets/img/labarchives-edit.png" alt="Edit mode"></span></div>
+        <figcaption><b>Edit mode</b> — form for entering identifiers and adding dated events.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <h2 class="section">Installation</h2>
+  <p>The plugin has two parts — an HTML block and a JavaScript block — that go into the matching
+     sections of a LabArchives widget. To install:</p>
+  <ol>
+    <li>Click the <b>three dots</b> (⋮) in the top-right corner, then <b>Widgets</b> &rarr;
+        <b>Widget Manager</b>.</li>
+    <li>Click <b>+ New Widget</b>.</li>
+    <li>Enter a <b>Widget Title</b> under “Widget Information.”</li>
+    <li>Paste each part of the code into its corresponding section of the <b>Code Editor</b>
+        (HTML into the HTML area, JavaScript into the JavaScript area).</li>
+    <li>Click <b>Save Changes</b>.</li>
+  </ol>
+  <p class="note">Once saved, the widget can be added to a notebook page, where you can switch
+     between display and edit modes.</p>
+
+  <h2 class="section">Source code</h2>
+  <p class="note">Paste each block into the matching section of the LabArchives Code Editor.</p>
+
+  <div class="codehead"><span class="pill">Part 1</span> HTML</div>
+  <div class="codeblock">
+    <button class="copybtn" data-copy="code-html">Copy</button>
+<pre id="code-html"><!-- ============================================================= -->
+<!-- PASTE INTO: Widget Manager -> Add new Widget -> Code Editor -> HTML Editor -->
+<!-- No <script> here. Every field has a lowercase name = its id.    -->
+<!-- ============================================================= -->
+
+<style>
+  .mw-wrap { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color:#23303c; max-width:940px; }
+  .mw-wrap h3 { font-size:14px; color:#1f5578; border-bottom:1px solid #d9dee6; padding-bottom:5px; margin:14px 0 10px; text-transform:uppercase; letter-spacing:.03em; }
+  .mw-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .mw-field { display:flex; flex-direction:column; margin-bottom:6px; }
+  .mw-field.mw-span2 { grid-column:span 2; }
+  .mw-field.mw-span3 { grid-column:1 / -1; }
+  .mw-field label { font-size:11px; font-weight:bold; color:#6b7885; margin-bottom:3px; }
+  .mw-wrap input, .mw-wrap select, .mw-wrap textarea {
+    font-size:13px; padding:6px 8px; border:1px solid #d9dee6; border-radius:4px; width:100%; font-family:inherit;
+  }
+  .mw-wrap textarea { min-height:40px; resize:vertical; }
+  .mw-btn { font-size:12px; font-weight:bold; padding:7px 13px; border:none; border-radius:4px; background:#2c6e9c; color:#fff; cursor:pointer; }
+  .mw-btn.sec { background:#eef2f6; color:#1f5578; border:1px solid #d9dee6; }
+  .mw-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+  .mw-table th, .mw-table td { border:1px solid #d9dee6; padding:6px 8px; text-align:left; vertical-align:top; }
+  .mw-table th { background:#f4f6f9; color:#6b7885; font-size:11px; text-transform:uppercase; }
+  .mw-note { font-size:11px; color:#6b7885; margin-top:4px; }
+  .mw-msg { font-size:12px; font-weight:bold; margin-left:8px; }
+  .mw-checks { border:1px solid #d9dee6; border-radius:4px; padding:6px 8px; max-height:120px; overflow:auto; background:#fff; }
+  .mw-checks label { display:block; font-size:12px; font-weight:normal; color:#23303c; margin:2px 0; }
+  .mw-checks input { width:auto; margin-right:6px; }
+  .mw-grouphdr { background:#eef2f6; font-weight:bold; color:#1f5578; }
+  .mw-bar { margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .mw-thumb { position:relative; display:inline-block; }
+  .mw-thumb img { width:56px; height:56px; object-fit:cover; border:1px solid #d9dee6; border-radius:4px; cursor:pointer; display:block; }
+  .mw-thumb .mw-thumbx { position:absolute; top:-6px; right:-6px; background:#c0392b; color:#fff; border:none; border-radius:50%; width:16px; height:16px; font-size:10px; line-height:14px; cursor:pointer; padding:0; }
+  .mw-logthumb img { width:44px; height:44px; object-fit:cover; border:1px solid #d9dee6; border-radius:3px; cursor:pointer; margin:2px 2px 0 0; }
+  /* Kill the decorative calendar image LabArchives injects for date fields */
+  #m_dob, #e_date,
+  #m_dob + img, #e_date + img,
+  .mw-field img { background-image:none !important; }
+  .mw-field img { display:none !important; }
+</style>
+
+<div class="mw-wrap">
+
+  <!-- ================= ADD MOUSE ================= -->
+  <h3>Add / Register Mouse</h3>
+  <div class="mw-grid">
+    <div class="mw-field"><label>Mouse ID</label><input type="text" name="m_id" id="m_id" placeholder="M-0421"></div>
+    <div class="mw-field"><label>Ear Tag</label><input type="text" name="m_eartag" id="m_eartag" placeholder="3L / 2R"></div>
+    <div class="mw-field"><label>Sex</label>
+      <select name="m_sex" id="m_sex">
+        <option value="">--</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="unknown">Unknown</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Cage Number</label><input type="text" name="m_cage" id="m_cage" placeholder="C-117"></div>
+    <div class="mw-field"><label>Group / Batch</label><input type="text" name="m_group" id="m_group" placeholder="batch1"></div>
+    <div class="mw-field"><label>Date of Birth</label><input type="text" name="m_dob" id="m_dob" placeholder="MM/DD/YYYY"></div>
+    <div class="mw-field"><label>Strain / Background</label><input type="text" name="m_strain" id="m_strain" placeholder="C57BL/6J"></div>
+    <div class="mw-field mw-span2"><label>Genotype</label>
+      <select name="m_genotype" id="m_genotype">
+        <option value="">-- select --</option>
+        <option value="wt">WT</option>
+        <option value="VGluT2-Cre">VGluT2-Cre</option>
+        <option value="VGAT-cre">VGAT-cre</option>
+        <option value="TH-Cre">TH-Cre</option>
+        <option value="ORX-Cre">ORX-Cre</option>
+        <option value="VGluT2-Cre-tdt">VGluT2-Cre-tdt</option>
+        <option value="VGAT-cre-tdt">VGAT-cre-tdt</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Genotype (if Other)</label><input type="text" name="m_genotypeother" id="m_genotypeother" placeholder="specify"></div>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="addmousebtn">Add Mouse</button>
+    <button type="button" class="mw-btn sec" id="clearmousebtn">Clear</button>
+    <span class="mw-msg" id="mousemsg"></span>
+  </div>
+
+  <!-- ================= MOUSE ROSTER ================= -->
+  <h3>Mouse Roster</h3>
+  <table class="mw-table" id="rostertable">
+    <thead>
+      <tr>
+        <th style="width:90px;">Mouse ID</th><th style="width:70px;">Ear Tag</th><th style="width:60px;">Sex</th>
+        <th style="width:70px;">Cage</th><th style="width:70px;">Group</th><th style="width:90px;">DOB</th><th style="width:70px;">Age</th>
+        <th>Genotype</th><th style="width:70px;">Strain</th><th style="width:90px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="rosterbody">
+      <tr><td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ================= ADD EVENT ================= -->
+  <h3>Add Event</h3>
+  <div class="mw-grid">
+    <div class="mw-field"><label>Date</label><input type="text" name="e_date" id="e_date" placeholder="MM/DD/YYYY"></div>
+    <div class="mw-field"><label>Event Type</label>
+      <select name="e_type" id="e_type">
+        <option value="weaning">Weaning</option>
+        <option value="genotyping">Genotyping</option>
+        <option value="weight">Weight measurement</option>
+        <option value="dosing">Treatment / Dosing</option>
+        <option value="surgery">Surgery</option>
+        <option value="Handling">Handling</option>
+        <option value="Add mini2P base">Add mini2P base</option>
+        <option value="Imaging">Imaging</option>
+        <option value="Perfusion">Perfusion</option>
+        <option value="Slicing">Slicing</option>
+        <option value="behavior">Behavioral test</option>
+        <option value="tissue">Tissue collection</option>
+        <option value="breeding">Breeding setup</option>
+        <option value="health">Health observation</option>
+        <option value="transfer">Transfer / Re-cage</option>
+        <option value="endpoint">Euthanasia / Endpoint</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Protocol / IACUC #</label><input type="text" name="e_protocol" id="e_protocol" placeholder="IACUC-2024-118"></div>
+    <div class="mw-field"><label>Experimenter / User</label><input type="text" name="e_user" id="e_user" placeholder="initials or name"></div>
+    <div class="mw-field mw-span2"><label>File Storage Location</label><input type="text" name="e_fileloc" id="e_fileloc" placeholder="path, drive, or URL where data is stored"></div>
+    <div class="mw-field mw-span3"><label>Apply to which mice? (select one or more)</label>
+      <div class="mw-bar" style="margin-top:0;margin-bottom:6px;">
+        <select id="e_groupsel" name="e_groupsel" style="width:auto;min-width:150px;">
+          <option value="">-- add a group --</option>
+        </select>
+        <button type="button" class="mw-btn sec" id="e_addgroupbtn">Add Group's Mice</button>
+        <button type="button" class="mw-btn sec" id="e_selallbtn">Select All</button>
+        <button type="button" class="mw-btn sec" id="e_clrallbtn">Clear All</button>
+      </div>
+      <div class="mw-checks" id="e_micechecks">
+        <span style="color:#6b7885;font-style:italic;">Add mice above first.</span>
+      </div>
+    </div>
+    <div class="mw-field mw-span3"><label>Details</label>
+      <textarea name="e_details" id="e_details" placeholder="Dose, weight, observations, operator initials..."></textarea>
+    </div>
+    <div class="mw-field mw-span3"><label>Photos (auto-shrunk to thumbnails; you can add more than one)</label>
+      <input type="file" name="e_photos" id="e_photos" accept="image/*" multiple>
+      <div id="e_photoprev" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="addeventbtn">Add Event</button>
+    <button type="button" class="mw-btn sec" id="cleareventbtn">Clear</button>
+    <span class="mw-msg" id="eventmsg"></span>
+  </div>
+
+  <!-- ================= EVENT LOG + FILTER ================= -->
+  <h3>Event Log</h3>
+  <div class="mw-bar">
+    <label style="font-size:11px;font-weight:bold;color:#6b7885;">Filter by mouse:</label>
+    <select name="filtermouse" id="filtermouse" style="width:auto;min-width:160px;">
+      <option value="__all__">All mice (grouped)</option>
+    </select>
+    <button type="button" class="mw-btn sec" id="exportbtn">Generate CSV Export</button>
+  </div>
+  <table class="mw-table" id="logtable">
+    <thead>
+      <tr><th style="width:95px;">Date</th><th style="width:150px;">Type</th><th>Details</th><th style="width:120px;">Protocol</th><th style="width:90px;">Actions</th></tr>
+    </thead>
+    <tbody id="logbody">
+      <tr><td colspan="5" style="text-align:center;color:#6b7885;font-style:italic;">No events logged yet.</td></tr>
+    </tbody>
+  </table>
+  <div class="mw-note">Events are grouped by mouse. Use the filter to view a single animal. Age is auto-calculated from DOB.</div>
+
+  <!-- ================= EXPORT BOX ================= -->
+  <div class="mw-field mw-span3" id="exportwrap" style="display:none;margin-top:10px;">
+    <label>CSV export — click inside, Select All (Ctrl/Cmd+A), Copy, paste into a spreadsheet or a LabArchives attachment</label>
+    <textarea name="exportbox" id="exportbox" readonly style="min-height:120px;font-family:monospace;font-size:11px;"></textarea>
+    <div class="mw-bar">
+      <button type="button" class="mw-btn sec" id="copyexportbtn">Copy to Clipboard</button>
+      <button type="button" class="mw-btn sec" id="downloadexportbtn">Try Download</button>
+      <span class="mw-msg" id="exportmsg"></span>
+    </div>
+  </div>
+
+  <!-- ================= IMPORT / MERGE ================= -->
+  <h3>Import / Merge CSV</h3>
+  <div class="mw-field mw-span3">
+    <label>Paste CSV here (same column format as the export), then set the options below and click Import</label>
+    <textarea name="importbox" id="importbox" placeholder="Mouse ID,Ear Tag,Sex,Cage,Group,DOB,Age,Genotype,Strain,Event Date,Event Type,Experimenter,File Location,Protocol,Details" style="min-height:110px;font-family:monospace;font-size:11px;"></textarea>
+  </div>
+  <div class="mw-bar">
+    <span style="font-size:11px;font-weight:bold;color:#6b7885;">If a Mouse ID already exists:</span>
+    <label style="font-weight:normal;"><input type="radio" name="dupmouse" value="skip" checked style="width:auto;margin-right:4px;">Skip (keep mine)</label>
+    <label style="font-weight:normal;"><input type="radio" name="dupmouse" value="overwrite" style="width:auto;margin-right:4px;">Overwrite from import</label>
+  </div>
+  <div class="mw-bar">
+    <span style="font-size:11px;font-weight:bold;color:#6b7885;">If an event already exists:</span>
+    <label style="font-weight:normal;"><input type="radio" name="dupevent" value="keep" checked style="width:auto;margin-right:4px;">Keep original (skip)</label>
+    <label style="font-weight:normal;"><input type="radio" name="dupevent" value="overwrite" style="width:auto;margin-right:4px;">Overwrite from import</label>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="importbtn">Import / Merge</button>
+    <button type="button" class="mw-btn sec" id="clearimportbtn">Clear Box</button>
+    <span class="mw-msg" id="importmsg"></span>
+  </div>
+  <div class="mw-note">Import expects the exported column order. An "event" is considered the same if Mouse ID + Event Date + Event Type match.</div>
+
+</div></pre>
+  </div>
+
+  <div class="codehead"><span class="pill">Part 2</span> JavaScript</div>
+  <div class="codeblock">
+    <button class="copybtn" data-copy="code-js">Copy</button>
+<pre id="code-js">// PASTE INTO: Widget Manager -> Add new Widget -> Code Editor -> JavaScript Editor -->
+my_widget_script =
+{
+  // ================= data =================
+  mw_mice: [],    // [{id, eartag, sex, cage, dob, strain, genotype}]
+  mw_events: [],  // [{date, type, protocol, user, fileloc, details, mice:[id,...]}]
+  mw_editId: null, // id of mouse currently being edited, or null
+  mw_editEventIdx: null, // index of event currently being edited, or null
+  mw_stagePhotos: [], // data-URL strings staged for the event being composed/edited
+
+  // ================= helpers =================
+  mw_esc: function (s) {
+    if (s === null || s === undefined) { return ''; }
+    s = String(s);
+    s = s.split('&').join('&amp;');
+    s = s.split('<').join('&lt;');
+    s = s.split('>').join('&gt;');
+    s = s.split('"').join('&quot;');
+    return s;
+  },
+
+  mw_today: function () {
+    var d = new Date();
+    var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd = ('0' + d.getDate()).slice(-2);
+    return mm + '/' + dd + '/' + d.getFullYear();
+  },
+
+  mw_trim: function (s) {
+    if (s === null || s === undefined) { return ''; }
+    return String(s).replace(/^\s+/, '').replace(/\s+$/, '');
+  },
+
+  // parse MM/DD/YYYY (also tolerates YYYY-MM-DD from older data)
+  mw_parseDate: function (s) {
+    if (!s) { return null; }
+    s = this.mw_trim(s);
+    var m;
+    // MM/DD/YYYY
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) { return new Date(parseInt(m[3],10), parseInt(m[1],10)-1, parseInt(m[2],10)); }
+    // YYYY-MM-DD (legacy)
+    m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) { return new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10)); }
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  },
+
+  mw_ageStr: function (dob) {
+    var d0 = this.mw_parseDate(dob);
+    if (!d0) { return ''; }
+    var days = Math.floor((new Date().getTime() - d0.getTime()) / 86400000);
+    if (days < 0) { return 'future'; }
+    return days + 'd (' + Math.floor(days / 7) + 'w)';
+  },
+
+  mw_selText: function (id) {
+    var sel = document.getElementById(id);
+    if (!sel || sel.selectedIndex < 0) { return ''; }
+    return sel.options[sel.selectedIndex].text;
+  },
+
+  mw_msg: function (id, text, isError) {
+    var el = document.getElementById(id);
+    if (!el) { return; }
+    el.textContent = text ? text : '';
+    if (isError) { el.style.color = '#c0392b'; } else { el.style.color = '#2e8b57'; }
+    if (text) {
+      window.setTimeout(function () {
+        var e2 = document.getElementById(id);
+        if (e2) { e2.textContent = ''; }
+      }, 3000);
+    }
+  },
+
+  mw_findMouse: function (mid) {
+    var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      if (this.mw_mice[i].id === mid) { return this.mw_mice[i]; }
+    }
+    return null;
+  },
+
+  // ================= add / update / remove mouse =================
+  mw_readMouseForm: function () {
+    var geno = this.mw_selText('m_genotype');
+    var genoOther = this.mw_trim(document.getElementById('m_genotypeother').value);
+    if (document.getElementById('m_genotype').value === 'other' && genoOther) { geno = genoOther; }
+
+    var m = {};
+    m.id = this.mw_trim(document.getElementById('m_id').value);
+    m.eartag = this.mw_trim(document.getElementById('m_eartag').value);
+    m.sex = this.mw_selText('m_sex');
+    m.cage = this.mw_trim(document.getElementById('m_cage').value);
+    m.group = this.mw_trim(document.getElementById('m_group').value);
+    m.dob = this.mw_trim(document.getElementById('m_dob').value);
+    m.strain = this.mw_trim(document.getElementById('m_strain').value);
+    m.genotype = (geno === '-- select --') ? '' : geno;
+    return m;
+  },
+
+  mw_addMouse: function () {
+    var m = this.mw_readMouseForm();
+    if (!m.id) { this.mw_msg('mousemsg', 'Mouse ID is required.', true); return; }
+
+    if (this.mw_editId) {
+      // ---- update existing mouse ----
+      var oldId = this.mw_editId;
+      // if ID changed, make sure the new one isn't a duplicate of a different mouse
+      if (m.id !== oldId && this.mw_findMouse(m.id)) {
+        this.mw_msg('mousemsg', 'That Mouse ID already exists.', true); return;
+      }
+      var target = this.mw_findMouse(oldId);
+      if (target) {
+        target.id = m.id;
+        target.eartag = m.eartag;
+        target.sex = m.sex;
+        target.cage = m.cage;
+        target.group = m.group;
+        target.dob = m.dob;
+        target.strain = m.strain;
+        target.genotype = m.genotype;
+      }
+      // if the ID was renamed, update it inside every event's mice list
+      if (m.id !== oldId) {
+        var k;
+        for (k = 0; k < this.mw_events.length; k++) {
+          var arr = this.mw_events[k].mice;
+          var n;
+          for (n = 0; n < arr.length; n++) {
+            if (arr[n] === oldId) { arr[n] = m.id; }
+          }
+        }
+      }
+      this.mw_endEdit();
+      this.mw_renderRoster();
+      this.mw_renderMiceChecks();
+      this.mw_renderGroupControls();
+      this.mw_renderFilter();
+      this.mw_renderLog();
+      this.mw_msg('mousemsg', 'Mouse updated.', false);
+      return;
+    }
+
+    // ---- add new mouse ----
+    if (this.mw_findMouse(m.id)) { this.mw_msg('mousemsg', 'That Mouse ID already exists.', true); return; }
+    this.mw_mice.push(m);
+    // NOTE: fields are intentionally NOT cleared, so shared values
+    // (cage, DOB, strain, genotype) carry to the next littermate.
+    // Only clear the two fields that must be unique per animal.
+    document.getElementById('m_id').value = '';
+    document.getElementById('m_eartag').value = '';
+    this.mw_renderRoster();
+    this.mw_renderMiceChecks();
+    this.mw_renderGroupControls();
+    this.mw_renderFilter();
+    this.mw_renderLog();
+    this.mw_msg('mousemsg', 'Mouse added. Shared fields kept for next littermate.', false);
+  },
+
+  mw_editMouse: function (mid) {
+    var m = this.mw_findMouse(mid);
+    if (!m) { return; }
+    document.getElementById('m_id').value = m.id;
+    document.getElementById('m_eartag').value = m.eartag;
+    document.getElementById('m_sex').value = m.sex ? this.mw_valueForText('m_sex', m.sex) : '';
+    document.getElementById('m_cage').value = m.cage;
+    document.getElementById('m_group').value = m.group || '';
+    document.getElementById('m_dob').value = m.dob;
+    document.getElementById('m_strain').value = m.strain;
+
+    // genotype: match to a preset value, else use Other + free text
+    var gsel = document.getElementById('m_genotype');
+    var matched = this.mw_valueForText('m_genotype', m.genotype);
+    if (matched) {
+      gsel.value = matched;
+      document.getElementById('m_genotypeother').value = '';
+    } else if (m.genotype) {
+      gsel.value = 'other';
+      document.getElementById('m_genotypeother').value = m.genotype;
+    } else {
+      gsel.value = '';
+      document.getElementById('m_genotypeother').value = '';
+    }
+
+    this.mw_editId = mid;
+    var btn = document.getElementById('addmousebtn');
+    if (btn) { btn.textContent = 'Update Mouse'; }
+    var cbtn = document.getElementById('clearmousebtn');
+    if (cbtn) { cbtn.textContent = 'Cancel Edit'; }
+    this.mw_msg('mousemsg', 'Editing ' + mid + ' - make changes and click Update.', false);
+    // bring the form into view
+    var idf = document.getElementById('m_id');
+    if (idf && idf.scrollIntoView) { idf.scrollIntoView({ block: 'center' }); }
+  },
+
+  // find the option value whose text OR value matches a stored string
+  mw_valueForText: function (selId, str) {
+    var sel = document.getElementById(selId);
+    if (!sel) { return ''; }
+    var i;
+    for (i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].text === str || sel.options[i].value === str) {
+        return sel.options[i].value;
+      }
+    }
+    return '';
+  },
+
+  mw_endEdit: function () {
+    this.mw_editId = null;
+    var btn = document.getElementById('addmousebtn');
+    if (btn) { btn.textContent = 'Add Mouse'; }
+    var cbtn = document.getElementById('clearmousebtn');
+    if (cbtn) { cbtn.textContent = 'Clear'; }
+  },
+
+  mw_clearMouse: function () {
+    document.getElementById('m_id').value = '';
+    document.getElementById('m_eartag').value = '';
+    document.getElementById('m_sex').value = '';
+    document.getElementById('m_cage').value = '';
+    document.getElementById('m_group').value = '';
+    document.getElementById('m_dob').value = '';
+    document.getElementById('m_strain').value = '';
+    document.getElementById('m_genotype').value = '';
+    document.getElementById('m_genotypeother').value = '';
+    this.mw_endEdit();
+  },
+
+  mw_removeMouse: function (mid) {
+    var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      if (this.mw_mice[i].id === mid) { this.mw_mice.splice(i, 1); break; }
+    }
+    // drop this mouse from any event; remove events left with no mice
+    var keep = [];
+    var k;
+    for (k = 0; k < this.mw_events.length; k++) {
+      var ev = this.mw_events[k];
+      var m2 = [];
+      var n;
+      for (n = 0; n < ev.mice.length; n++) {
+        if (ev.mice[n] !== mid) { m2.push(ev.mice[n]); }
+      }
+      ev.mice = m2;
+      if (ev.mice.length > 0) { keep.push(ev); }
+    }
+    this.mw_events = keep;
+
+    this.mw_renderRoster();
+    this.mw_renderMiceChecks();
+    this.mw_renderGroupControls();
+    this.mw_renderFilter();
+    this.mw_renderLog();
+  },
+
+  mw_renderRoster: function () {
+    var self = this;
+    var body = document.getElementById('rosterbody');
+    if (!body) { return; }
+
+    if (this.mw_mice.length === 0) {
+      body.innerHTML = '<' + 'tr><' + 'td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.<' + '/td><' + '/tr>';
+      return;
+    }
+    var html = '';
+    var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      var m = this.mw_mice[i];
+      html = html + '<' + 'tr>';
+      html = html + '<' + 'td>' + this.mw_esc(m.id) + '<' + '/td>';
+      html = html + '<' + 'td>' + this.mw_esc(m.eartag) + '<' + '/td>';
+      html = html + '<' + 'td>' + this.mw_esc(m.sex) + '<' + '/td>';
+      html = html + '<' + 'td>' + this.mw_esc(m.cage) + '<' + '/td>';
+      html = html + '<' + 'td>' + this.mw_esc(m.group || '') + '<' + '/td>';
+      html = html + '<' + 'td>' + this.mw_esc(m.dob) + '<' + '/td>';
+      html = html + '<' + 'td>' + this.mw_esc(this.mw_ageStr(m.dob)) + '<' + '/td>';
+      html = html + '<' + 'td>' + this.mw_esc(m.genotype) + '<' + '/td>';
+      html = html + '<' + 'td>' + this.mw_esc(m.strain) + '<' + '/td>';
+      html = html + '<' + 'td style="white-space:nowrap;">' +
+             '<' + 'button type="button" class="mw-btn sec mw-editmouse" data-id="' + this.mw_esc(m.id) + '" style="padding:2px 7px;margin-right:4px;">edit<' + '/button>' +
+             '<' + 'button type="button" class="mw-btn sec mw-delmouse" data-id="' + this.mw_esc(m.id) + '" style="padding:2px 7px;">x<' + '/button>' +
+             '<' + '/td>';
+      html = html + '<' + '/tr>';
+    }
+    body.innerHTML = html;
+
+    var edits = body.querySelectorAll('.mw-editmouse');
+    var q;
+    for (q = 0; q < edits.length; q++) {
+      edits[q].addEventListener('click', function () {
+        self.mw_editMouse(this.getAttribute('data-id'));
+      });
+    }
+
+    var dels = body.querySelectorAll('.mw-delmouse');
+    var j;
+    for (j = 0; j < dels.length; j++) {
+      dels[j].addEventListener('click', function () {
+        self.mw_removeMouse(this.getAttribute('data-id'));
+      });
+    }
+  },
+
+  // ================= groups =================
+  mw_groupList: function () {
+    var seen = {};
+    var out = [];
+    var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      var g = this.mw_mice[i].group;
+      if (g && !seen[g]) { seen[g] = true; out.push(g); }
+    }
+    out.sort();
+    return out;
+  },
+
+  mw_renderGroupControls: function () {
+    var sel = document.getElementById('e_groupsel');
+    if (!sel) { return; }
+    var prev = sel.value;
+    var groups = this.mw_groupList();
+    var html = '<' + 'option value="">-- add a group --<' + '/option>';
+    var i;
+    for (i = 0; i < groups.length; i++) {
+      html = html + '<' + 'option value="' + this.mw_esc(groups[i]) + '">' + this.mw_esc(groups[i]) + '<' + '/option>';
+    }
+    sel.innerHTML = html;
+    // restore previous selection if still valid
+    var found = false;
+    var o;
+    for (o = 0; o < sel.options.length; o++) { if (sel.options[o].value === prev) { found = true; break; } }
+    sel.value = found ? prev : '';
+  },
+
+  mw_addGroupMice: function () {
+    var sel = document.getElementById('e_groupsel');
+    if (!sel || !sel.value) { this.mw_msg('eventmsg', 'Pick a group first.', true); return; }
+    var g = sel.value;
+    var chks = document.querySelectorAll('.mw-micechk');
+    var count = 0;
+    var i;
+    for (i = 0; i < chks.length; i++) {
+      var m = this.mw_findMouse(chks[i].value);
+      if (m && m.group === g) { chks[i].checked = true; count++; }
+    }
+    this.mw_msg('eventmsg', 'Ticked ' + count + ' mouse(s) in ' + g + '.', false);
+  },
+
+  mw_selectAllMice: function (on) {
+    var chks = document.querySelectorAll('.mw-micechk');
+    var i;
+    for (i = 0; i < chks.length; i++) { chks[i].checked = on; }
+  },
+
+  // ================= event mouse checkboxes =================
+  mw_renderMiceChecks: function () {
+    var box = document.getElementById('e_micechecks');
+    if (!box) { return; }
+    if (this.mw_mice.length === 0) {
+      box.innerHTML = '<' + 'span style="color:#6b7885;font-style:italic;">Add mice above first.<' + '/span>';
+      return;
+    }
+    var html = '';
+    var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      var m = this.mw_mice[i];
+      var lbl = this.mw_esc(m.id);
+      if (m.eartag) { lbl = lbl + ' (' + this.mw_esc(m.eartag) + ')'; }
+      if (m.group) { lbl = lbl + ' [' + this.mw_esc(m.group) + ']'; }
+      html = html + '<' + 'label><' + 'input type="checkbox" class="mw-micechk" value="' + this.mw_esc(m.id) + '">' + lbl + '<' + '/label>';
+    }
+    box.innerHTML = html;
+  },
+
+  mw_getCheckedMice: function () {
+    var out = [];
+    var chks = document.querySelectorAll('.mw-micechk');
+    var i;
+    for (i = 0; i < chks.length; i++) {
+      if (chks[i].checked) { out.push(chks[i].value); }
+    }
+    return out;
+  },
+
+  // ================= photos (downscaled thumbnails) =================
+  // Read chosen files, shrink each to <= maxDim and JPEG-compress, then
+  // push the resulting data URL into mw_stagePhotos and re-render preview.
+  mw_handlePhotoInput: function (fileList) {
+    var self = this;
+    if (!fileList || fileList.length === 0) { return; }
+    var maxDim = 800;
+    var i;
+    for (i = 0; i < fileList.length; i++) {
+      (function (file) {
+        if (!file.type || file.type.indexOf('image/') !== 0) { return; }
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var img = new Image();
+          img.onload = function () {
+            var w = img.width, h = img.height;
+            if (w > h) {
+              if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+            } else {
+              if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            var dataUrl;
+            try { dataUrl = canvas.toDataURL('image/jpeg', 0.7); }
+            catch (err) { dataUrl = ''; }
+            if (dataUrl) {
+              self.mw_stagePhotos.push(dataUrl);
+              self.mw_renderStagePhotos();
+            }
+          };
+          img.onerror = function () {
+            self.mw_msg('eventmsg', 'Could not read one image.', true);
+          };
+          img.src = ev.target.result;
+        };
+        reader.onerror = function () {
+          self.mw_msg('eventmsg', 'File read blocked in this view.', true);
+        };
+        reader.readAsDataURL(file);
+      })(fileList[i]);
+    }
+    // reset the input so the same file can be re-picked if needed
+    var inp = document.getElementById('e_photos');
+    if (inp) { inp.value = ''; }
+  },
+
+  mw_renderStagePhotos: function () {
+    var self = this;
+    var box = document.getElementById('e_photoprev');
+    if (!box) { return; }
+    if (this.mw_stagePhotos.length === 0) { box.innerHTML = ''; return; }
+    var html = '';
+    var i;
+    for (i = 0; i < this.mw_stagePhotos.length; i++) {
+      html = html + '<' + 'span class="mw-thumb">' +
+             '<' + 'img src="' + this.mw_stagePhotos[i] + '" data-i="' + i + '" class="mw-stagethumb">' +
+             '<' + 'button type="button" class="mw-thumbx mw-stagex" data-i="' + i + '">x<' + '/button>' +
+             '<' + '/span>';
+    }
+    box.innerHTML = html;
+
+    var xs = box.querySelectorAll('.mw-stagex');
+    var a;
+    for (a = 0; a < xs.length; a++) {
+      xs[a].addEventListener('click', function () {
+        self.mw_stagePhotos.splice(parseInt(this.getAttribute('data-i'), 10), 1);
+        self.mw_renderStagePhotos();
+      });
+    }
+    var ims = box.querySelectorAll('.mw-stagethumb');
+    var b;
+    for (b = 0; b < ims.length; b++) {
+      ims[b].addEventListener('click', function () {
+        self.mw_openPhoto(this.getAttribute('src'));
+      });
+    }
+  },
+
+  // Open a photo in a new tab/window. Sandbox may block window.open; if
+  // so, the thumbnail itself is still visible inline.
+  mw_openPhoto: function (dataUrl) {
+    try {
+      var w = window.open();
+      if (w && w.document) {
+        w.document.write('<' + 'img src="' + dataUrl + '" style="max-width:100%">');
+      }
+    } catch (err) {
+      // silently ignore; inline thumbnail remains available
+    }
+  },
+
+  // ================= add / update / remove event =================
+  mw_addEvent: function () {
+    var date = document.getElementById('e_date').value;
+    if (!date) { this.mw_msg('eventmsg', 'Event date is required.', true); return; }
+    var mice = this.mw_getCheckedMice();
+    if (mice.length === 0) { this.mw_msg('eventmsg', 'Select at least one mouse.', true); return; }
+
+    if (this.mw_editEventIdx !== null && this.mw_editEventIdx >= 0 &&
+        this.mw_editEventIdx < this.mw_events.length) {
+      // ---- update existing event ----
+      var ev = this.mw_events[this.mw_editEventIdx];
+      ev.date = this.mw_trim(date);
+      ev.type = this.mw_selText('e_type');
+      ev.protocol = this.mw_trim(document.getElementById('e_protocol').value);
+      ev.user = this.mw_trim(document.getElementById('e_user').value);
+      ev.fileloc = this.mw_trim(document.getElementById('e_fileloc').value);
+      ev.details = this.mw_trim(document.getElementById('e_details').value);
+      ev.mice = mice;
+      ev.photos = this.mw_stagePhotos.slice(0);
+
+      this.mw_events.sort(function (a, b) {
+        if (a.date < b.date) { return 1; }
+        if (a.date > b.date) { return -1; }
+        return 0;
+      });
+      this.mw_endEventEdit();
+      this.mw_clearEvent();
+      this.mw_renderLog();
+      this.mw_msg('eventmsg', 'Event updated.', false);
+      return;
+    }
+
+    // ---- add new event ----
+    var nev = {};
+    nev.date = this.mw_trim(date);
+    nev.type = this.mw_selText('e_type');
+    nev.protocol = this.mw_trim(document.getElementById('e_protocol').value);
+    nev.user = this.mw_trim(document.getElementById('e_user').value);
+    nev.fileloc = this.mw_trim(document.getElementById('e_fileloc').value);
+    nev.details = this.mw_trim(document.getElementById('e_details').value);
+    nev.mice = mice;
+    nev.photos = this.mw_stagePhotos.slice(0);
+    this.mw_events.push(nev);
+
+    this.mw_events.sort(function (a, b) {
+      if (a.date < b.date) { return 1; }
+      if (a.date > b.date) { return -1; }
+      return 0;
+    });
+
+    this.mw_clearEvent();
+    this.mw_renderLog();
+    this.mw_msg('eventmsg', 'Event added.', false);
+  },
+
+  mw_editEvent: function (idx) {
+    if (idx < 0 || idx >= this.mw_events.length) { return; }
+    var ev = this.mw_events[idx];
+
+    document.getElementById('e_date').value = ev.date || '';
+    document.getElementById('e_type').value = this.mw_valueForText('e_type', ev.type) || ev.type || '';
+    document.getElementById('e_protocol').value = ev.protocol || '';
+    document.getElementById('e_user').value = ev.user || '';
+    document.getElementById('e_fileloc').value = ev.fileloc || '';
+    document.getElementById('e_details').value = ev.details || '';
+
+    // load this event's photos into the staging area
+    this.mw_stagePhotos = (ev.photos && ev.photos.length) ? ev.photos.slice(0) : [];
+    this.mw_renderStagePhotos();
+
+    // tick the checkboxes for this event's mice
+    var chks = document.querySelectorAll('.mw-micechk');
+    var i;
+    for (i = 0; i < chks.length; i++) {
+      var on = false;
+      var n;
+      for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] === chks[i].value) { on = true; break; } }
+      chks[i].checked = on;
+    }
+
+    this.mw_editEventIdx = idx;
+    var btn = document.getElementById('addeventbtn');
+    if (btn) { btn.textContent = 'Update Event'; }
+    var cbtn = document.getElementById('cleareventbtn');
+    if (cbtn) { cbtn.textContent = 'Cancel Edit'; }
+    this.mw_msg('eventmsg', 'Editing event - make changes and click Update.', false);
+
+    var df = document.getElementById('e_date');
+    if (df && df.scrollIntoView) { df.scrollIntoView({ block: 'center' }); }
+  },
+
+  mw_endEventEdit: function () {
+    this.mw_editEventIdx = null;
+    var btn = document.getElementById('addeventbtn');
+    if (btn) { btn.textContent = 'Add Event'; }
+    var cbtn = document.getElementById('cleareventbtn');
+    if (cbtn) { cbtn.textContent = 'Clear'; }
+  },
+
+  mw_clearEvent: function () {
+    document.getElementById('e_protocol').value = '';
+    document.getElementById('e_user').value = '';
+    document.getElementById('e_fileloc').value = '';
+    document.getElementById('e_details').value = '';
+    document.getElementById('e_date').value = this.mw_today();
+    var chks = document.querySelectorAll('.mw-micechk');
+    var i;
+    for (i = 0; i < chks.length; i++) { chks[i].checked = false; }
+    this.mw_stagePhotos = [];
+    this.mw_renderStagePhotos();
+    this.mw_endEventEdit();
+  },
+
+  mw_removeEvent: function (idx) {
+    if (idx >= 0 && idx < this.mw_events.length) {
+      this.mw_events.splice(idx, 1);
+      this.mw_renderLog();
+    }
+  },
+
+  // ================= filter dropdown =================
+  mw_renderFilter: function () {
+    var sel = document.getElementById('filtermouse');
+    if (!sel) { return; }
+    var prev = sel.value;
+    var html = '<' + 'option value="__all__">All mice (grouped)<' + '/option>';
+
+    // group filters (prefixed so we can tell them apart from mouse ids)
+    var groups = this.mw_groupList();
+    var g;
+    for (g = 0; g < groups.length; g++) {
+      html = html + '<' + 'option value="__grp__' + this.mw_esc(groups[g]) + '">Group: ' + this.mw_esc(groups[g]) + '<' + '/option>';
+    }
+
+    // individual mice
+    var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      var m = this.mw_mice[i];
+      html = html + '<' + 'option value="' + this.mw_esc(m.id) + '">' + this.mw_esc(m.id) + '<' + '/option>';
+    }
+    sel.innerHTML = html;
+
+    var found = false;
+    var o;
+    for (o = 0; o < sel.options.length; o++) {
+      if (sel.options[o].value === prev) { found = true; break; }
+    }
+    sel.value = found ? prev : '__all__';
+  },
+
+  // ================= event log render =================
+  mw_eventsForMouse: function (mid) {
+    var out = [];
+    var i;
+    for (i = 0; i < this.mw_events.length; i++) {
+      var ev = this.mw_events[i];
+      var n;
+      for (n = 0; n < ev.mice.length; n++) {
+        if (ev.mice[n] === mid) { out.push({ ev: ev, idx: i }); break; }
+      }
+    }
+    return out;
+  },
+
+  mw_rowHtml: function (ev, idx, showMice) {
+    var details = this.mw_esc(ev.details);
+    var protocol = this.mw_esc(ev.protocol);
+    if (!protocol) { protocol = '&mdash;'; }
+
+    // build the details cell with user + file location as sub-lines
+    var dcell = details ? details : '&mdash;';
+    var meta = '';
+    if (ev.user) { meta = meta + 'By: ' + this.mw_esc(ev.user); }
+    if (ev.fileloc) {
+      if (meta) { meta = meta + ' | '; }
+      meta = meta + 'File: ' + this.mw_esc(ev.fileloc);
+    }
+    if (meta) {
+      dcell = dcell + '<' + 'br><' + 'span style="color:#6b7885;font-size:10px;">' + meta + '<' + '/span>';
+    }
+
+    // photo thumbnails (clickable)
+    if (ev.photos && ev.photos.length) {
+      dcell = dcell + '<' + 'div class="mw-logthumb">';
+      var p;
+      for (p = 0; p < ev.photos.length; p++) {
+        dcell = dcell + '<' + 'img src="' + ev.photos[p] + '" class="mw-openphoto">';
+      }
+      dcell = dcell + '<' + '/div>';
+    }
+
+    var typeCell = this.mw_esc(ev.type);
+    if (showMice) {
+      typeCell = typeCell + '<' + 'br><' + 'span style="color:#6b7885;font-size:10px;">' + this.mw_esc(ev.mice.join(', ')) + '<' + '/span>';
+    }
+    var h = '<' + 'tr>';
+    h = h + '<' + 'td>' + this.mw_esc(ev.date) + '<' + '/td>';
+    h = h + '<' + 'td>' + typeCell + '<' + '/td>';
+    h = h + '<' + 'td>' + dcell + '<' + '/td>';
+    h = h + '<' + 'td>' + protocol + '<' + '/td>';
+    h = h + '<' + 'td style="white-space:nowrap;">' +
+        '<' + 'button type="button" class="mw-btn sec mw-editevent" data-i="' + idx + '" style="padding:2px 7px;margin-right:4px;">edit<' + '/button>' +
+        '<' + 'button type="button" class="mw-btn sec mw-delevent" data-i="' + idx + '" style="padding:2px 7px;">x<' + '/button>' +
+        '<' + '/td>';
+    h = h + '<' + '/tr>';
+    return h;
+  },
+
+  // render grouped-by-mouse blocks for a given list of mice
+  mw_renderGroupedFor: function (miceArr) {
+    var html = '';
+    var i;
+    for (i = 0; i < miceArr.length; i++) {
+      var m = miceArr[i];
+      var rows = this.mw_eventsForMouse(m.id);
+      var hdr = this.mw_esc(m.id);
+      if (m.eartag) { hdr = hdr + ' - tag ' + this.mw_esc(m.eartag); }
+      if (m.group) { hdr = hdr + ' [' + this.mw_esc(m.group) + ']'; }
+      hdr = hdr + ' (' + rows.length + ' event' + (rows.length === 1 ? '' : 's') + ')';
+      html = html + '<' + 'tr class="mw-grouphdr"><' + 'td colspan="5">' + hdr + '<' + '/td><' + '/tr>';
+      if (rows.length === 0) {
+        html = html + '<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">no events<' + '/td><' + '/tr>';
+      } else {
+        var r;
+        for (r = 0; r < rows.length; r++) {
+          html = html + this.mw_rowHtml(rows[r].ev, rows[r].idx, false);
+        }
+      }
+    }
+    return html;
+  },
+
+  mw_renderLog: function () {
+    var self = this;
+    var body = document.getElementById('logbody');
+    if (!body) { return; }
+
+    var filter = '__all__';
+    var fsel = document.getElementById('filtermouse');
+    if (fsel) { filter = fsel.value; }
+
+    if (this.mw_events.length === 0) {
+      body.innerHTML = '<' + 'tr><' + 'td colspan="5" style="text-align:center;color:#6b7885;font-style:italic;">No events logged yet.<' + '/td><' + '/tr>';
+      this.mw_wireLogDeletes();
+      return;
+    }
+
+    var html = '';
+
+    if (filter === '__all__') {
+      // all mice, grouped by mouse
+      html = this.mw_renderGroupedFor(this.mw_mice);
+
+    } else if (filter.indexOf('__grp__') === 0) {
+      // one group: show its mice, each grouped by mouse
+      var gname = filter.substring(7);
+      var inGroup = [];
+      var a;
+      for (a = 0; a < this.mw_mice.length; a++) {
+        if (this.mw_mice[a].group === gname) { inGroup.push(this.mw_mice[a]); }
+      }
+      if (inGroup.length === 0) {
+        html = '<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">No mice in group ' + this.mw_esc(gname) + '.<' + '/td><' + '/tr>';
+      } else {
+        html = this.mw_renderGroupedFor(inGroup);
+      }
+
+    } else {
+      // single mouse
+      var single = this.mw_eventsForMouse(filter);
+      if (single.length === 0) {
+        html = '<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">No events for ' + this.mw_esc(filter) + '.<' + '/td><' + '/tr>';
+      } else {
+        var s;
+        for (s = 0; s < single.length; s++) {
+          html = html + this.mw_rowHtml(single[s].ev, single[s].idx, false);
+        }
+      }
+    }
+
+    body.innerHTML = html;
+    this.mw_wireLogDeletes();
+  },
+
+  mw_wireLogDeletes: function () {
+    var self = this;
+    var edits = document.querySelectorAll('.mw-editevent');
+    var q;
+    for (q = 0; q < edits.length; q++) {
+      edits[q].addEventListener('click', function () {
+        self.mw_editEvent(parseInt(this.getAttribute('data-i'), 10));
+      });
+    }
+    var dels = document.querySelectorAll('.mw-delevent');
+    var j;
+    for (j = 0; j < dels.length; j++) {
+      dels[j].addEventListener('click', function () {
+        self.mw_removeEvent(parseInt(this.getAttribute('data-i'), 10));
+      });
+    }
+    var ph = document.querySelectorAll('.mw-openphoto');
+    var k;
+    for (k = 0; k < ph.length; k++) {
+      ph[k].addEventListener('click', function () {
+        self.mw_openPhoto(this.getAttribute('src'));
+      });
+    }
+  },
+
+  // ================= CSV export (one row per mouse) =================
+  mw_csvCell: function (v) {
+    v = (v === null || v === undefined) ? '' : String(v);
+    return '"' + v.split('"').join('""') + '"';
+  },
+
+  mw_buildCsv: function () {
+    var rows = [];
+    var header = ['Mouse ID', 'Ear Tag', 'Sex', 'Cage', 'Group', 'DOB', 'Age', 'Genotype', 'Strain',
+                  'Event Date', 'Event Type', 'Experimenter', 'File Location', 'Protocol', 'Details'];
+    rows.push(header);
+
+    var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      var m = this.mw_mice[i];
+      var evs = this.mw_eventsForMouse(m.id);
+      if (evs.length === 0) {
+        rows.push([m.id, m.eartag, m.sex, m.cage, m.group || '', m.dob, this.mw_ageStr(m.dob), m.genotype, m.strain,
+                   '', '', '', '', '', '']);
+      } else {
+        var r;
+        for (r = 0; r < evs.length; r++) {
+          var ev = evs[r].ev;
+          rows.push([m.id, m.eartag, m.sex, m.cage, m.group || '', m.dob, this.mw_ageStr(m.dob), m.genotype, m.strain,
+                     ev.date, ev.type, ev.user || '', ev.fileloc || '', ev.protocol, ev.details]);
+        }
+      }
+    }
+
+    var out = '';
+    var a;
+    for (a = 0; a < rows.length; a++) {
+      var line = [];
+      var b;
+      for (b = 0; b < rows[a].length; b++) { line.push(this.mw_csvCell(rows[a][b])); }
+      out = out + line.join(',') + '\r\n';
+    }
+    return out;
+  },
+
+  mw_export: function () {
+    var csv = this.mw_buildCsv();
+    var box = document.getElementById('exportbox');
+    var wrap = document.getElementById('exportwrap');
+    if (box) { box.value = csv; }
+    if (wrap) { wrap.style.display = 'block'; }
+    if (box) { box.focus(); box.select(); }
+    this.mw_msg('exportmsg', 'CSV generated below.', false);
+  },
+
+  mw_copyExport: function () {
+    var box = document.getElementById('exportbox');
+    if (!box) { return; }
+    box.focus();
+    box.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    this.mw_msg('exportmsg', ok ? 'Copied to clipboard.' : 'Press Ctrl/Cmd+C to copy.', !ok);
+  },
+
+  mw_downloadExport: function () {
+    // Best-effort; sandbox may block. Falls back to the copy box message.
+    var csv = this.mw_buildCsv();
+    try {
+      var blob = new Blob([csv], { type: 'text/csv' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'mouse_colony_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.mw_msg('exportmsg', 'Download started (if allowed).', false);
+    } catch (err) {
+      this.mw_msg('exportmsg', 'Download blocked here - use Copy instead.', true);
+    }
+  },
+
+  // ================= CSV import / merge =================
+  // Parse CSV text into an array of row-arrays. Handles quoted fields,
+  // escaped quotes (""), and both \r\n and \n line endings.
+  mw_parseCsv: function (text) {
+    var rows = [];
+    var row = [];
+    var field = '';
+    var inQ = false;
+    var i = 0;
+    var c, next;
+    text = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    for (i = 0; i < text.length; i++) {
+      c = text.charAt(i);
+      if (inQ) {
+        if (c === '"') {
+          next = text.charAt(i + 1);
+          if (next === '"') { field = field + '"'; i++; }
+          else { inQ = false; }
+        } else { field = field + c; }
+      } else {
+        if (c === '"') { inQ = true; }
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+        else { field = field + c; }
+      }
+    }
+    // last field/row
+    if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+    return rows;
+  },
+
+  mw_getRadio: function (name) {
+    var els = document.querySelectorAll('input[name="' + name + '"]');
+    var i;
+    for (i = 0; i < els.length; i++) { if (els[i].checked) { return els[i].value; } }
+    return '';
+  },
+
+  mw_sameEvent: function (a, b) {
+    return a.date === b.date && a.type === b.type;
+  },
+
+  mw_importCsv: function () {
+    var raw = document.getElementById('importbox').value;
+    if (!this.mw_trim(raw)) { this.mw_msg('importmsg', 'Paste CSV first.', true); return; }
+
+    var dupMouse = this.mw_getRadio('dupmouse');   // skip | overwrite
+    var dupEvent = this.mw_getRadio('dupevent');   // keep | overwrite
+
+    var rows = this.mw_parseCsv(raw);
+    if (rows.length < 2) { this.mw_msg('importmsg', 'No data rows found.', true); return; }
+
+    // Detect a header row and skip it.
+    var start = 0;
+    var first = (rows[0][0] || '').toLowerCase();
+    if (first.indexOf('mouse') !== -1) { start = 1; }
+
+    // Column order matches the export:
+    // 0 ID,1 EarTag,2 Sex,3 Cage,4 Group,5 DOB,6 Age,7 Genotype,8 Strain,
+    // 9 EventDate,10 EventType,11 Experimenter,12 FileLocation,13 Protocol,14 Details
+    var added = { mice: 0, events: 0 };
+    var updated = { mice: 0, events: 0 };
+    var skipped = { mice: 0, events: 0 };
+
+    var r;
+    for (r = start; r < rows.length; r++) {
+      var col = rows[r];
+      if (!col || col.length === 0) { continue; }
+      var id = this.mw_trim(col[0] || '');
+      if (!id) { continue; }
+
+      // ---- mouse ----
+      var incoming = {
+        id: id,
+        eartag: this.mw_trim(col[1] || ''),
+        sex: this.mw_trim(col[2] || ''),
+        cage: this.mw_trim(col[3] || ''),
+        group: this.mw_trim(col[4] || ''),
+        dob: this.mw_trim(col[5] || ''),
+        strain: this.mw_trim(col[8] || ''),
+        genotype: this.mw_trim(col[7] || '')
+      };
+      var existing = this.mw_findMouse(id);
+      if (!existing) {
+        this.mw_mice.push(incoming);
+        added.mice++;
+        existing = incoming;
+      } else if (dupMouse === 'overwrite') {
+        existing.eartag = incoming.eartag;
+        existing.sex = incoming.sex;
+        existing.cage = incoming.cage;
+        existing.group = incoming.group;
+        existing.dob = incoming.dob;
+        existing.strain = incoming.strain;
+        existing.genotype = incoming.genotype;
+        updated.mice++;
+      } else {
+        skipped.mice++;
+      }
+
+      // ---- event (only if this row carries event data) ----
+      var edate = this.mw_trim(col[9] || '');
+      var etype = this.mw_trim(col[10] || '');
+      if (edate || etype) {
+        var incEv = {
+          date: edate,
+          type: etype,
+          user: this.mw_trim(col[11] || ''),
+          fileloc: this.mw_trim(col[12] || ''),
+          protocol: this.mw_trim(col[13] || ''),
+          details: this.mw_trim(col[14] || ''),
+          photos: [],
+          mice: [id]
+        };
+        // find an existing event for THIS mouse matching date+type
+        var match = null;
+        var e;
+        for (e = 0; e < this.mw_events.length; e++) {
+          var ex = this.mw_events[e];
+          var belongs = false;
+          var z;
+          for (z = 0; z < ex.mice.length; z++) { if (ex.mice[z] === id) { belongs = true; break; } }
+          if (belongs && this.mw_sameEvent(ex, incEv)) { match = ex; break; }
+        }
+        if (!match) {
+          this.mw_events.push(incEv);
+          added.events++;
+        } else if (dupEvent === 'overwrite') {
+          match.user = incEv.user;
+          match.fileloc = incEv.fileloc;
+          match.protocol = incEv.protocol;
+          match.details = incEv.details;
+          updated.events++;
+        } else {
+          skipped.events++;
+        }
+      }
+    }
+
+    this.mw_events.sort(function (a, b) {
+      if (a.date < b.date) { return 1; }
+      if (a.date > b.date) { return -1; }
+      return 0;
+    });
+
+    this.mw_renderAll();
+    var summary = 'Mice +' + added.mice + ' / upd ' + updated.mice + ' / skip ' + skipped.mice +
+                  '  |  Events +' + added.events + ' / upd ' + updated.events + ' / skip ' + skipped.events;
+    this.mw_msg('importmsg', summary, false);
+  },
+
+  mw_clearImport: function () {
+    document.getElementById('importbox').value = '';
+    this.mw_msg('importmsg', '', false);
+  },
+
+  // ================= wiring =================
+  mw_wire: function () {
+    var self = this;
+    function bind(id, fn) {
+      var el = document.getElementById(id);
+      if (el && !el.getAttribute('data-mw')) {
+        el.setAttribute('data-mw', '1');
+        el.addEventListener('click', fn);
+      }
+    }
+    bind('addmousebtn', function () { self.mw_addMouse(); });
+    bind('clearmousebtn', function () { self.mw_clearMouse(); });
+    bind('addeventbtn', function () { self.mw_addEvent(); });
+    bind('cleareventbtn', function () { self.mw_clearEvent(); });
+    bind('exportbtn', function () { self.mw_export(); });
+    bind('copyexportbtn', function () { self.mw_copyExport(); });
+    bind('downloadexportbtn', function () { self.mw_downloadExport(); });
+    bind('importbtn', function () { self.mw_importCsv(); });
+    bind('clearimportbtn', function () { self.mw_clearImport(); });
+    bind('e_addgroupbtn', function () { self.mw_addGroupMice(); });
+    bind('e_selallbtn', function () { self.mw_selectAllMice(true); });
+    bind('e_clrallbtn', function () { self.mw_selectAllMice(false); });
+
+    var fsel = document.getElementById('filtermouse');
+    if (fsel && !fsel.getAttribute('data-mw')) {
+      fsel.setAttribute('data-mw', '1');
+      fsel.addEventListener('change', function () { self.mw_renderLog(); });
+    }
+
+    var ed = document.getElementById('e_date');
+    if (ed && !ed.value) { ed.value = this.mw_today(); }
+
+    var pin = document.getElementById('e_photos');
+    if (pin && !pin.getAttribute('data-mw')) {
+      pin.setAttribute('data-mw', '1');
+      pin.addEventListener('change', function () { self.mw_handlePhotoInput(this.files); });
+    }
+  },
+
+  mw_renderAll: function () {
+    this.mw_renderRoster();
+    this.mw_renderMiceChecks();
+    this.mw_renderGroupControls();
+    this.mw_renderFilter();
+    this.mw_renderLog();
+  },
+
+  mw_load: function (json_data) {
+    this.mw_mice = [];
+    this.mw_events = [];
+    try {
+      var d = json_data;
+      if (typeof d === 'string' && d.length) { d = JSON.parse(d); }
+      if (d && typeof d === 'object') {
+        if (d.mw_mice) { this.mw_mice = d.mw_mice; }
+        if (d.mw_events) { this.mw_events = d.mw_events; }
+      }
+    } catch (err) {
+      this.mw_mice = [];
+      this.mw_events = [];
+    }
+    if (!this.mw_mice) { this.mw_mice = []; }
+    if (!this.mw_events) { this.mw_events = []; }
+  },
+
+  // ================= default methods =================
+  init: function (mode, json_data) {
+    this.parent_class.init(mode, json_data, this);
+    this.mw_load(json_data);
+    this.mw_wire();
+    this.mw_renderAll();
+  },
+
+  to_json: function () {
+    var obj = {};
+    obj.mw_mice = this.mw_mice;
+    obj.mw_events = this.mw_events;
+    return JSON.stringify(obj);
+  },
+
+  from_json: function (json_data) {
+    this.parent_class.from_json(json_data);
+    this.mw_load(json_data);
+    this.mw_wire();
+    this.mw_renderAll();
+  },
+
+  test_data: function () {
+    return JSON.stringify({ mw_mice: [], mw_events: [] });
+  },
+
+  is_valid: function (b_suppress_message) {
+    return this.parent_class.is_valid(b_suppress_message);
+  },
+
+  is_edited: function () {
+    return this.parent_class.is_edited();
+  },
+
+  reset_edited: function () {
+    return this.parent_class.reset_edited();
+  }
+}</pre>
+  </div>
+
+</main>
+
+<footer class="container">
+  &copy; <span id="year"></span> Zengyou Ye
+</footer>
+
+<script src="../assets/data.js"></script>
+<script src="../assets/nav.js"></script>
+<script>
+  document.querySelectorAll(".copybtn").forEach(b=>{
+    b.addEventListener("click",()=>{
+      const code = document.getElementById(b.dataset.copy).textContent;
+      navigator.clipboard.writeText(code).then(()=>{
+        const old=b.textContent; b.textContent="Copied!";
+        setTimeout(()=>b.textContent=old,1500);
+      });
+    });
+  });
+</script>
+</body>
+</html>

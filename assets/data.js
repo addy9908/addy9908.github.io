@@ -43,7 +43,12 @@ const DOCS = [
 	repo: "FST_FP_synchronization",
 	title: "FST + Fiber Photometry Sync",
 	docPage: "projects/fst-fp-sync.html"
-	}
+	},
+  {
+  repo: "labarchives-plugin",
+  title: "Mouse Lifespan Event Log",
+  docPage: "projects/labarchives-plugin.html"
+    }
 ];
 
 /* --- Manual project list ---
