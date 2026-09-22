@@ -105,11 +105,15 @@
 <pre id="code-html">Loading…</pre>
   </div>
   <div id="html-preview" style="display:none;margin-top:12px">
+    <div style="margin-bottom:8px">
+      <button class="ptoggle" id="popoutBtn" type="button">⛶ Open full screen</button>
+    </div>
     <iframe id="previewFrame" sandbox="allow-scripts allow-downloads allow-popups allow-modals"
       style="width:100%;height:560px;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>
     <p class="note">Live preview — the plugin's HTML and JavaScript run together in an isolated frame,
       so buttons and mode switching work as they would in LabArchives. A small preview-only shim
-      stands in for the LabArchives framework; your source files are unchanged. Note that
+      stands in for the LabArchives framework; your source files are unchanged. Use “Open full
+      screen” for a standalone, phone-friendly view you can even add to your home screen. Note that
       LabArchives saves your data automatically inside a notebook, but this standalone preview does
       not persist between reloads — use it to try the interface, not to store real records.</p>
   </div>
@@ -145,12 +149,9 @@
         "Could not load " + path + " — make sure the file exists in the repo."; });
   });
 
-  // Raw / Preview toggle for Part 1
-  function buildPreview(){
-    // Shim: LabArchives normally provides parent_class and calls init().
-    // In this standalone preview we supply a no-op parent_class and bootstrap
-    // the widget ourselves, so buttons wire up and the app is fully functional.
-    // (Your .txt files are untouched — this shim lives only in the preview.)
+  // Build the full standalone document (shim + HTML + JS).
+  // mobile=true adds a viewport tag + touch-friendly sizing for the popout.
+  function buildDoc(mobile){
     const shim =
       "var __edited=false;" +
       "function __mkParent(){return{" +
@@ -172,16 +173,46 @@
         "}" +
       "});";
 
-    const doc =
-      "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
-      "<style>body{font:14px -apple-system,Segoe UI,Roboto,sans-serif;margin:12px;color:#1c2530}</style>" +
-      "</head><body>" +
+    const head =
+      "<meta charset='utf-8'>" +
+      (mobile ? "<meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover'>" +
+                "<meta name='apple-mobile-web-app-capable' content='yes'>" +
+                "<meta name='apple-mobile-web-app-title' content='Mouse Log'>" +
+                "<title>Mouse Lifespan Event Log</title>" : "") +
+      "<style>body{font:14px -apple-system,Segoe UI,Roboto,sans-serif;margin:12px;color:#1c2530}" +
+      (mobile ?
+        // On phones, let the 3-col grid collapse and make controls tap-friendly
+        "@media(max-width:640px){.mw-grid{grid-template-columns:1fr !important}" +
+        ".mw-field.mw-span2,.mw-field.mw-span3{grid-column:1 / -1 !important}" +
+        ".mw-wrap input,.mw-wrap select,.mw-wrap textarea{font-size:16px !important}" + // 16px stops iOS auto-zoom
+        ".mw-btn{padding:10px 14px !important}" +
+        ".mw-table{display:block;overflow-x:auto;white-space:nowrap}}" : "") +
+      "</style>";
+
+    return "<!DOCTYPE html><html><head>" + head + "</head><body>" +
       (loaded["code-html"] || "") +
       "<scr" + "ipt>" + shim + "</scr" + "ipt>" +
       "<scr" + "ipt>" + (loaded["code-js"] || "") + "</scr" + "ipt>" +
       "</body></html>";
-    document.getElementById("previewFrame").srcdoc = doc;
   }
+
+  // Raw / Preview toggle for Part 1
+  function buildPreview(){
+    document.getElementById("previewFrame").srcdoc = buildDoc(false);
+  }
+
+  // Pop the preview out into its own full-screen tab/window (phone-friendly)
+  function popoutPreview(){
+    const w = window.open("", "_blank");
+    if(!w){
+      alert("Your browser blocked the popup. Please allow popups for this site, then try again.");
+      return;
+    }
+    w.document.open();
+    w.document.write(buildDoc(true));
+    w.document.close();
+  }
+  document.getElementById("popoutBtn").addEventListener("click", popoutPreview);
   document.querySelectorAll(".ptoggle").forEach(btn=>{
     btn.addEventListener("click",()=>{
       document.querySelectorAll(".ptoggle").forEach(b=>b.classList.remove("active"));
