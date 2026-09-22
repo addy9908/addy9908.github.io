@@ -105,10 +105,13 @@
 <pre id="code-html">Loading…</pre>
   </div>
   <div id="html-preview" style="display:none;margin-top:12px">
-    <iframe id="previewFrame" sandbox="allow-scripts"
-      style="width:100%;height:460px;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>
+    <iframe id="previewFrame" sandbox="allow-scripts allow-downloads allow-popups allow-modals"
+      style="width:100%;height:560px;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>
     <p class="note">Live preview — the plugin's HTML and JavaScript run together in an isolated frame,
-      so buttons and mode switching work as they would in LabArchives.</p>
+      so buttons and mode switching work as they would in LabArchives. A small preview-only shim
+      stands in for the LabArchives framework; your source files are unchanged. Note that
+      LabArchives saves your data automatically inside a notebook, but this standalone preview does
+      not persist between reloads — use it to try the interface, not to store real records.</p>
   </div>
 
   <div class="codehead"><span class="pill">Part 2</span> JavaScript</div>
@@ -144,14 +147,39 @@
 
   // Raw / Preview toggle for Part 1
   function buildPreview(){
+    // Shim: LabArchives normally provides parent_class and calls init().
+    // In this standalone preview we supply a no-op parent_class and bootstrap
+    // the widget ourselves, so buttons wire up and the app is fully functional.
+    // (Your .txt files are untouched — this shim lives only in the preview.)
+    const shim =
+      "var __edited=false;" +
+      "function __mkParent(){return{" +
+        "init:function(){}," +
+        "from_json:function(){}," +
+        "is_valid:function(){return true;}," +
+        "is_edited:function(){return __edited;}," +
+        "reset_edited:function(){__edited=false;}" +
+      "};}" +
+      "window.addEventListener('load',function(){" +
+        "try{" +
+          "if(typeof my_widget_script==='object'){" +
+            "my_widget_script.parent_class=__mkParent();" +
+            "my_widget_script.init('edit','');" +
+          "}" +
+        "}catch(e){" +
+          "document.body.insertAdjacentHTML('afterbegin'," +
+            "'<div style=\\\"color:#c0392b;font:13px sans-serif;padding:8px\\\">Preview bootstrap error: '+e.message+'</div>');" +
+        "}" +
+      "});";
+
     const doc =
       "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
       "<style>body{font:14px -apple-system,Segoe UI,Roboto,sans-serif;margin:12px;color:#1c2530}</style>" +
       "</head><body>" +
       (loaded["code-html"] || "") +
+      "<scr" + "ipt>" + shim + "</scr" + "ipt>" +
       "<scr" + "ipt>" + (loaded["code-js"] || "") + "</scr" + "ipt>" +
       "</body></html>";
-    // srcdoc keeps it inside the sandboxed iframe
     document.getElementById("previewFrame").srcdoc = doc;
   }
   document.querySelectorAll(".ptoggle").forEach(btn=>{
