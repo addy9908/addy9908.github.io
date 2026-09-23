@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documents — Your Name</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0}
+  .toolbar input[type=text]{flex:1;min-width:200px}
+  .btn{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:9px 15px;font:inherit;
+    cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--brand-2);text-decoration:none}
+  .btn.secondary{background:var(--code);color:var(--ink);border:1px solid var(--line)}
+  .btn.small{padding:5px 11px;font-size:.82rem}
+  .cat{margin-top:28px}
+  .cat h2{font-size:1.2rem;border-bottom:1px solid var(--line);padding-bottom:8px;
+    display:flex;align-items:center;gap:10px}
+  .cat h2 .count{font-size:.78rem;color:var(--muted);font-weight:400}
+  .docgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));margin-top:14px}
+  .doccard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;
+    box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .doccard .top{display:flex;gap:10px;align-items:flex-start}
+  .doccard .icon{font-size:1.5rem;line-height:1;flex-shrink:0}
+  .doccard .title{font-weight:600;word-break:break-word}
+  .doccard .badge{font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;color:var(--brand-2);
+    background:#eaf1fd;border-radius:999px;padding:2px 8px;margin-left:auto;flex-shrink:0}
+  .doccard .desc{font-size:.85rem;color:var(--muted);margin-top:8px;flex:1}
+  .doccard .actions{margin-top:12px;display:flex;gap:8px}
+  .empty{color:var(--muted);font-size:.92rem;margin-top:16px}
+  .loading{color:var(--muted);margin-top:16px}
+  details{margin-top:28px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  summary{cursor:pointer;font-weight:600}
+  details code{background:var(--code);padding:1px 6px;border-radius:4px;border:1px solid var(--line);
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem}
+  details pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:12px;
+    overflow:auto;font-size:.82rem}
+  /* Preview modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(16,24,40,.6);display:none;z-index:100;
+    align-items:center;justify-content:center;padding:16px}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:12px;width:100%;max-width:900px;height:85vh;display:flex;
+    flex-direction:column;overflow:hidden;box-shadow:var(--shadow)}
+  .modal .mhead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .modal .mhead .mtitle{font-weight:600;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .modal .mhead .mclose{margin-left:auto;background:var(--code);border:1px solid var(--line);
+    border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}
+  .modal iframe,.modal img{flex:1;width:100%;border:0;background:#f0f2f5;object-fit:contain}
+</style>
+</head>
+<body data-root="">
+<main class="container">
+  <a class="backlink" href="index.html">&larr; Back to home</a>
+  <h1>Documents</h1>
+  <p class="note">Shared SOPs, secondary labels, and other useful documents. The list is stored in
+     <code>documents.json</code> in the repo, so it's the same on every device. Click a document to
+     preview it in the browser, or download it.</p>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search documents…">
+    <a class="btn" id="editBtn" href="#" target="_blank" rel="noopener">Edit documents.json on GitHub</a>
+  </div>
+
+  <div id="loading" class="loading">Loading documents…</div>
+  <div id="container"></div>
+
+  <details>
+    <summary>How to add a document</summary>
+    <p style="margin-top:12px">Documents are listed in <code>documents.json</code>. You can either
+       store the file in the repo (e.g. in an <code>assets/docs/</code> folder) and point to it, or
+       link to a file hosted elsewhere (Google Drive, SharePoint, Dropbox) by pasting its share URL.</p>
+    <ol>
+      <li>If storing in the repo: upload your file (PDF recommended for in-browser preview) into
+          <code>assets/docs/</code>.</li>
+      <li>Click <b>Edit documents.json on GitHub</b> above and add an entry:</li>
+    </ol>
+    <pre>{
+  "title": "My SOP name",
+  "url": "assets/docs/my-sop.pdf",
+  "category": "SOPs",
+  "type": "pdf",
+  "desc": "Short description"
+}</pre>
+    <p>Put a comma after the previous entry's <code>}</code>, keep everything inside the outer
+       <code>[ ]</code>, and commit. The page updates within about a minute.</p>
+    <p class="note">Fields: <code>title</code>, <code>url</code>, <code>category</code> (groups
+       documents), <code>type</code> (<code>pdf</code>, <code>image</code>, <code>doc</code>,
+       <code>sheet</code>, or <code>link</code> — controls the icon and preview), and optional
+       <code>desc</code>. PDFs and images preview in-page; Word/Excel files download.</p>
+  </details>
+</main>
+
+<!-- Preview modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="mhead">
+      <span class="mtitle" id="mtitle"></span>
+      <a class="btn small" id="mopen" href="#" target="_blank" rel="noopener">Open in new tab</a>
+      <button class="mclose" id="mclose">Close</button>
+    </div>
+    <div id="mbody" style="flex:1;display:flex"></div>
+  </div>
+</div>
+
+<footer class="container">
+  &copy; <span id="year"></span> Zengyou Ye &middot; Documents listed in <code>documents.json</code>.
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  let docs = [];
+
+  const ICONS = { pdf:"📄", image:"🖼️", doc:"📝", sheet:"📊", link:"🔗" };
+
+  // Build "Edit on GitHub" URL from GH_USER + guessed repo
+  const REPO = (window.GH_USER && window.GH_USER !== "USERNAME") ? guessRepo() : null;
+  function guessRepo(){
+    const host = location.hostname;
+    const parts = location.pathname.split("/").filter(Boolean);
+    if(parts.length && !host.startsWith(window.GH_USER.toLowerCase())) return parts[0];
+    return window.GH_USER + ".github.io";
+  }
+  if(REPO){
+    $("editBtn").href = `https://github.com/${window.GH_USER}/${REPO}/edit/main/documents.json`;
+  }else{
+    $("editBtn").style.display = "none";
+  }
+
+  function esc(s){ return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+  async function load(){
+    try{
+      const res = await fetch("documents.json?_=" + Date.now());
+      if(!res.ok) throw new Error();
+      docs = await res.json();
+    }catch(e){
+      $("loading").textContent = "Couldn't load documents.json. Make sure the file exists in the repo root.";
+      return;
+    }
+    $("loading").style.display = "none";
+    render();
+  }
+
+  function canPreview(d){
+    const t = (d.type||"").toLowerCase();
+    return t === "pdf" || t === "image";
+  }
+
+  function render(){
+    const term = $("search").value.trim().toLowerCase();
+    const filtered = docs.filter(d =>
+      !term || (d.title+" "+(d.category||"")+" "+(d.desc||"")+" "+(d.type||"")).toLowerCase().includes(term));
+
+    const container = $("container");
+    if(!filtered.length){
+      container.innerHTML = `<p class="empty">${docs.length?"No documents match your search.":"No documents yet — add some to documents.json."}</p>`;
+      return;
+    }
+    const groups = {};
+    filtered.forEach(d=>{ const c=d.category||"Uncategorized"; (groups[c]=groups[c]||[]).push(d); });
+
+    container.innerHTML = Object.keys(groups).sort().map(cat=>{
+      const cards = groups[cat].map((d,idx)=>{
+        const gi = docs.indexOf(d);
+        const icon = ICONS[(d.type||"link").toLowerCase()] || ICONS.link;
+        const previewBtn = canPreview(d)
+          ? `<button class="btn small" data-preview="${gi}">Preview</button>` : "";
+        return `
+          <div class="doccard">
+            <div class="top">
+              <span class="icon">${icon}</span>
+              <span class="title">${esc(d.title)}</span>
+              <span class="badge">${esc(d.type||"link")}</span>
+            </div>
+            ${d.desc?`<div class="desc">${esc(d.desc)}</div>`:`<div class="desc"></div>`}
+            <div class="actions">
+              ${previewBtn}
+              <a class="btn small secondary" href="${esc(d.url)}" target="_blank" rel="noopener" download>Download</a>
+            </div>
+          </div>`;
+      }).join("");
+      return `<div class="cat"><h2>${esc(cat)} <span class="count">${groups[cat].length}</span></h2>
+              <div class="docgrid">${cards}</div></div>`;
+    }).join("");
+
+    container.querySelectorAll("[data-preview]").forEach(b=>{
+      b.addEventListener("click",()=>openPreview(docs[+b.dataset.preview]));
+    });
+  }
+
+  function openPreview(d){
+    $("mtitle").textContent = d.title;
+    $("mopen").href = d.url;
+    const body = $("mbody");
+    const t = (d.type||"").toLowerCase();
+    if(t === "image"){
+      body.innerHTML = `<img src="${esc(d.url)}" alt="${esc(d.title)}">`;
+    }else{ // pdf
+      body.innerHTML = `<iframe src="${esc(d.url)}" title="${esc(d.title)}"></iframe>`;
+    }
+    $("modal").classList.add("open");
+  }
+  function closePreview(){ $("modal").classList.remove("open"); $("mbody").innerHTML=""; }
+
+  $("search").addEventListener("input", render);
+  $("mclose").addEventListener("click", closePreview);
+  $("modal").addEventListener("click", e=>{ if(e.target.id==="modal") closePreview(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closePreview(); });
+
+  load();
+})();
+</script>
+</body>
+</html>

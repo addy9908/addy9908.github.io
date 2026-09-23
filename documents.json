@@ -1,0 +1,37 @@
+[
+  {
+    "title": "SOP for Active Place Avoidance (APA)",
+    "url": "assets/docs/SOP for Active Place Avoidance.pdf",
+    "category": "SOPs",
+    "type": "pdf",
+    "desc": "Standard operating procedure for Active Place Avoidance behavior test."
+  },
+  {
+    "title": "SOP for Foot Shock active avoidance in customized chamber",
+    "url": "assets/docs/SOP_for_FS_active_avoidance.pdf",
+    "category": "SOPs",
+    "type": "pdf",
+    "desc": "Design and SOP for Foot Shock active avoidance in customized chamber."
+  },
+  {
+    "title": "Secondary container label - Ethonol",
+    "url": "assets/docs/ZY_labels_5815_letter_Ethanol.pdf",
+    "category": "Secondary Labels",
+    "type": "pdf",
+    "desc": "Secondary container label for Ethonol, printable with Avery5815 letter size shipping labels."
+  },
+  {
+    "title": "Secondary container label - Single",
+    "url": "assets/docs/ZY_labels_5815_letter_single_V2.pdf",
+    "category": "Secondary Labels",
+    "type": "pdf",
+    "desc": "Secondary container label for Single item, printable with Avery5815 letter size shipping labels."
+  },
+  {
+    "title": "Secondary container label - solution",
+    "url": "assets/docs/ZY_labels_5815_letter_complex.pdf",
+    "category": "Secondary Labels",
+    "type": "pdf",
+    "desc": "Secondary container label for multiple item (solution), printable with Avery5815 letter size shipping labels."
+  }
+]
