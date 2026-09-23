@@ -43,6 +43,12 @@
 
 <div class="mw-wrap">
 
+  <!-- ================= PROJECT TITLE ================= -->
+  <div class="mw-field mw-span3" style="margin-bottom:10px;">
+    <label>Project Title</label>
+    <input type="text" name="projecttitle" id="projecttitle" placeholder="e.g. mini2P imaging - orexin circuit" style="font-size:16px;font-weight:bold;color:#1f5578;">
+  </div>
+
   <!-- ================= ADD MOUSE ================= -->
   <h3>Add / Register Mouse</h3>
   <div class="mw-grid">

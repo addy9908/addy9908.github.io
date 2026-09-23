@@ -1247,12 +1247,14 @@ my_widget_script =
   mw_load: function (json_data) {
     this.mw_mice = [];
     this.mw_events = [];
+    var title = '';
     try {
       var d = json_data;
       if (typeof d === 'string' && d.length) { d = JSON.parse(d); }
       if (d && typeof d === 'object') {
         if (d.mw_mice) { this.mw_mice = d.mw_mice; }
         if (d.mw_events) { this.mw_events = d.mw_events; }
+        if (d.mw_title) { title = d.mw_title; }
       }
     } catch (err) {
       this.mw_mice = [];
@@ -1260,6 +1262,8 @@ my_widget_script =
     }
     if (!this.mw_mice) { this.mw_mice = []; }
     if (!this.mw_events) { this.mw_events = []; }
+    var tEl = document.getElementById('projecttitle');
+    if (tEl) { tEl.value = title; }
   },
 
   // ================= default methods =================
@@ -1272,6 +1276,8 @@ my_widget_script =
 
   to_json: function () {
     var obj = {};
+    var tEl = document.getElementById('projecttitle');
+    obj.mw_title = tEl ? this.mw_trim(tEl.value) : '';
     obj.mw_mice = this.mw_mice;
     obj.mw_events = this.mw_events;
     return JSON.stringify(obj);
