@@ -7,6 +7,7 @@ my_widget_script =
   mw_editEventIdx: null, // index of event currently being edited, or null
   mw_stagePhotos: [], // data-URL strings staged for the event being composed/edited
   mw_stagePerMouse: {}, // { mouseId: "note" } staged per-mouse details
+  mw_collapsed: {}, // { mouseId: true } collapsed groups in the log view
 
   // ================= helpers =================
   mw_esc: function (s) {
@@ -676,6 +677,52 @@ my_widget_script =
     if (cbtn) { cbtn.textContent = 'Clear'; }
   },
 
+  // Duplicate: load an event's info into the Add Event form as a NEW event
+  // (not edit mode). Date defaults to today; photos are not copied.
+  mw_duplicateEvent: function (idx) {
+    if (idx < 0 || idx >= this.mw_events.length) { return; }
+    var ev = this.mw_events[idx];
+
+    // make sure we are in add-new mode, not editing
+    this.mw_endEventEdit();
+
+    document.getElementById('e_date').value = this.mw_today(); // today
+    document.getElementById('e_type').value = this.mw_valueForText('e_type', ev.type) || ev.type || '';
+    document.getElementById('e_protocol').value = ev.protocol || '';
+    document.getElementById('e_user').value = ev.user || '';
+    document.getElementById('e_fileloc').value = ev.fileloc || '';
+    document.getElementById('e_details').value = ev.details || '';
+
+    // no photos on a duplicate
+    this.mw_stagePhotos = [];
+    this.mw_renderStagePhotos();
+
+    // copy per-mouse notes
+    this.mw_stagePerMouse = {};
+    if (ev.perMouse) {
+      var pk;
+      for (pk in ev.perMouse) {
+        if (ev.perMouse.hasOwnProperty(pk)) { this.mw_stagePerMouse[pk] = ev.perMouse[pk]; }
+      }
+    }
+
+    // tick the same mice
+    var chks = document.querySelectorAll('.mw-micechk');
+    var i;
+    for (i = 0; i < chks.length; i++) {
+      var on = false;
+      var n;
+      for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] === chks[i].value) { on = true; break; } }
+      chks[i].checked = on;
+    }
+    this.mw_renderPerMouse();
+
+    this.mw_msg('eventmsg', 'Copied to form - change the date/details and click Add Event.', false);
+
+    var df = document.getElementById('e_date');
+    if (df && df.scrollIntoView) { df.scrollIntoView({ block: 'center' }); }
+  },
+
   mw_clearEvent: function () {
     document.getElementById('e_protocol').value = '';
     document.getElementById('e_user').value = '';
@@ -800,6 +847,7 @@ my_widget_script =
     h = h + '<' + 'td>' + protocol + '<' + '/td>';
     h = h + '<' + 'td style="white-space:nowrap;">' +
         '<' + 'button type="button" class="mw-btn sec mw-editevent" data-i="' + idx + '" style="padding:2px 7px;margin-right:4px;">edit<' + '/button>' +
+        '<' + 'button type="button" class="mw-btn sec mw-dupevent" data-i="' + idx + '" style="padding:2px 7px;margin-right:4px;">copy<' + '/button>' +
         '<' + 'button type="button" class="mw-btn sec mw-delevent" data-i="' + idx + '" style="padding:2px 7px;">x<' + '/button>' +
         '<' + '/td>';
     h = h + '<' + '/tr>';
@@ -813,17 +861,21 @@ my_widget_script =
     for (i = 0; i < miceArr.length; i++) {
       var m = miceArr[i];
       var rows = this.mw_eventsForMouse(m.id);
-      var hdr = this.mw_esc(m.id);
+      var isCollapsed = this.mw_collapsed[m.id] ? true : false;
+      var arrow = isCollapsed ? '&#9656;' : '&#9662;'; // right triangle / down triangle
+      var hdr = arrow + ' ' + this.mw_esc(m.id);
       if (m.eartag) { hdr = hdr + ' - tag ' + this.mw_esc(m.eartag); }
       if (m.group) { hdr = hdr + ' [' + this.mw_esc(m.group) + ']'; }
       hdr = hdr + ' (' + rows.length + ' event' + (rows.length === 1 ? '' : 's') + ')';
-      html = html + '<' + 'tr class="mw-grouphdr"><' + 'td colspan="5">' + hdr + '<' + '/td><' + '/tr>';
-      if (rows.length === 0) {
-        html = html + '<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">no events<' + '/td><' + '/tr>';
-      } else {
-        var r;
-        for (r = 0; r < rows.length; r++) {
-          html = html + this.mw_rowHtml(rows[r].ev, rows[r].idx, false, m.id);
+      html = html + '<' + 'tr class="mw-grouphdr mw-toggle" data-id="' + this.mw_esc(m.id) + '" style="cursor:pointer;"><' + 'td colspan="5">' + hdr + '<' + '/td><' + '/tr>';
+      if (!isCollapsed) {
+        if (rows.length === 0) {
+          html = html + '<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">no events<' + '/td><' + '/tr>';
+        } else {
+          var r;
+          for (r = 0; r < rows.length; r++) {
+            html = html + this.mw_rowHtml(rows[r].ev, rows[r].idx, false, m.id);
+          }
         }
       }
     }
@@ -891,6 +943,13 @@ my_widget_script =
         self.mw_editEvent(parseInt(this.getAttribute('data-i'), 10));
       });
     }
+    var dups = document.querySelectorAll('.mw-dupevent');
+    var d;
+    for (d = 0; d < dups.length; d++) {
+      dups[d].addEventListener('click', function () {
+        self.mw_duplicateEvent(parseInt(this.getAttribute('data-i'), 10));
+      });
+    }
     var dels = document.querySelectorAll('.mw-delevent');
     var j;
     for (j = 0; j < dels.length; j++) {
@@ -905,6 +964,26 @@ my_widget_script =
         self.mw_openPhoto(this.getAttribute('src'));
       });
     }
+    var tg = document.querySelectorAll('.mw-toggle');
+    var t;
+    for (t = 0; t < tg.length; t++) {
+      tg[t].addEventListener('click', function () {
+        var id = this.getAttribute('data-id');
+        if (self.mw_collapsed[id]) { delete self.mw_collapsed[id]; }
+        else { self.mw_collapsed[id] = true; }
+        self.mw_renderLog();
+      });
+    }
+  },
+
+  mw_collapseAll: function (on) {
+    if (on) {
+      var i;
+      for (i = 0; i < this.mw_mice.length; i++) { this.mw_collapsed[this.mw_mice[i].id] = true; }
+    } else {
+      this.mw_collapsed = {};
+    }
+    this.mw_renderLog();
   },
 
   // ================= CSV export (one row per mouse) =================
@@ -1242,6 +1321,8 @@ my_widget_script =
     bind('e_addgroupbtn', function () { self.mw_addGroupMice(); });
     bind('e_selallbtn', function () { self.mw_selectAllMice(true); });
     bind('e_clrallbtn', function () { self.mw_selectAllMice(false); });
+    bind('collapseallbtn', function () { self.mw_collapseAll(true); });
+    bind('expandallbtn', function () { self.mw_collapseAll(false); });
 
     var fsel = document.getElementById('filtermouse');
     if (fsel && !fsel.getAttribute('data-mw')) {

@@ -173,11 +173,13 @@
       <option value="oldest">Oldest first</option>
       <option value="newest">Newest first</option>
     </select>
+    <button type="button" class="mw-btn sec" id="collapseallbtn">Collapse All</button>
+    <button type="button" class="mw-btn sec" id="expandallbtn">Expand All</button>
     <button type="button" class="mw-btn sec" id="exportbtn">Generate CSV Export</button>
   </div>
   <table class="mw-table" id="logtable">
     <thead>
-      <tr><th style="width:95px;">Date</th><th style="width:150px;">Type</th><th>Details</th><th style="width:120px;">Protocol</th><th style="width:90px;">Actions</th></tr>
+      <tr><th style="width:95px;">Date</th><th style="width:150px;">Type</th><th>Details</th><th style="width:120px;">Protocol</th><th style="width:130px;">Actions</th></tr>
     </thead>
     <tbody id="logbody">
       <tr><td colspan="5" style="text-align:center;color:#6b7885;font-style:italic;">No events logged yet.</td></tr>
