@@ -8,6 +8,7 @@ my_widget_script =
   mw_stagePhotos: [], // data-URL strings staged for the event being composed/edited
   mw_stagePerMouse: {}, // { mouseId: "note" } staged per-mouse details
   mw_collapsed: {}, // { mouseId: true } collapsed groups in the log view
+  mw_rosterCollapsed: false, // whether the roster table is collapsed
 
   // ================= helpers =================
   mw_esc: function (s) {
@@ -292,6 +293,7 @@ my_widget_script =
 
     if (this.mw_mice.length === 0) {
       body.innerHTML = '<' + 'tr><' + 'td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.<' + '/td><' + '/tr>';
+      this.mw_applyRosterCollapse();
       return;
     }
     var html = '';
@@ -331,6 +333,8 @@ my_widget_script =
         self.mw_removeMouse(this.getAttribute('data-id'));
       });
     }
+
+    this.mw_applyRosterCollapse();
   },
 
   // ================= groups =================
@@ -986,6 +990,23 @@ my_widget_script =
     this.mw_renderLog();
   },
 
+  mw_toggleRoster: function () {
+    this.mw_rosterCollapsed = !this.mw_rosterCollapsed;
+    this.mw_applyRosterCollapse();
+  },
+
+  mw_applyRosterCollapse: function () {
+    var tbl = document.getElementById('rostertable');
+    var arrow = document.getElementById('rostertoggle');
+    var count = document.getElementById('rostercount');
+    if (tbl) { tbl.style.display = this.mw_rosterCollapsed ? 'none' : ''; }
+    if (arrow) { arrow.innerHTML = this.mw_rosterCollapsed ? '&#9656;' : '&#9662;'; }
+    if (count) {
+      var nm = this.mw_mice.length;
+      count.textContent = '(' + nm + ' ' + (nm === 1 ? 'mouse' : 'mice') + ')';
+    }
+  },
+
   // ================= CSV export (one row per mouse) =================
   mw_csvCell: function (v) {
     v = (v === null || v === undefined) ? '' : String(v);
@@ -1323,6 +1344,7 @@ my_widget_script =
     bind('e_clrallbtn', function () { self.mw_selectAllMice(false); });
     bind('collapseallbtn', function () { self.mw_collapseAll(true); });
     bind('expandallbtn', function () { self.mw_collapseAll(false); });
+    bind('rosterhdr', function () { self.mw_toggleRoster(); });
 
     var fsel = document.getElementById('filtermouse');
     if (fsel && !fsel.getAttribute('data-mw')) {

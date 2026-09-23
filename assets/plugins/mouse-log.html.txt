@@ -34,6 +34,24 @@
   .mw-pmrow { display:flex; align-items:center; gap:8px; margin:3px 0; }
   .mw-pmrow .mw-pmlabel { font-size:11px; font-weight:bold; color:#1f5578; min-width:120px; }
   .mw-pmrow input { flex:1; }
+  .mw-band {
+    margin:22px 0 12px;
+    padding:12px 16px;
+    background:linear-gradient(135deg,#1f5578,#2c6e9c);
+    color:#ffffff !important;
+    border-radius:6px;
+    font-size:15px;
+    font-weight:bold;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+  }
+  .mw-band, .mw-band span, .mw-band .mw-band-ico, .mw-band .mw-band-sub { color:#ffffff !important; }
+  .mw-band .mw-band-ico { font-size:18px; line-height:1; }
+  .mw-band .mw-band-sub { font-size:11px; font-weight:normal; letter-spacing:.02em; text-transform:none; opacity:.9; margin-left:auto; }
   /* Kill the decorative calendar image LabArchives injects for date fields */
   #m_dob, #e_date,
   #m_dob + img, #e_date + img,
@@ -49,8 +67,14 @@
     <input type="text" name="projecttitle" id="projecttitle" placeholder="e.g. mini2P imaging - orexin circuit" style="font-size:16px;font-weight:bold;color:#1f5578;">
   </div>
 
+  <!-- ================= ANIMAL MANAGEMENT ZONE ================= -->
+  <div class="mw-band">
+    <span class="mw-band-ico">&#128123;</span>
+    <span>Animal Management</span>
+    <span class="mw-band-sub">register &amp; view your mice</span>
+  </div>
+
   <!-- ================= ADD MOUSE ================= -->
-  <h3>Add / Register Mouse</h3>
   <div class="mw-grid">
     <div class="mw-field"><label>Mouse ID</label><input type="text" name="m_id" id="m_id" placeholder="M-0421"></div>
     <div class="mw-field"><label>Ear Tag</label><input type="text" name="m_eartag" id="m_eartag" placeholder="3L / 2R"></div>
@@ -88,7 +112,9 @@
   </div>
 
   <!-- ================= MOUSE ROSTER ================= -->
-  <h3>Mouse Roster</h3>
+  <h3 id="rosterhdr" style="cursor:pointer;">
+    <span id="rostertoggle">&#9662;</span> Mouse Roster <span id="rostercount" style="font-weight:normal;text-transform:none;color:#6b7885;"></span>
+  </h3>
   <table class="mw-table" id="rostertable">
     <thead>
       <tr>
@@ -102,8 +128,14 @@
     </tbody>
   </table>
 
+  <!-- ================= EVENT LOGGING ZONE ================= -->
+  <div class="mw-band">
+    <span class="mw-band-ico">&#128197;</span>
+    <span>Event Logging</span>
+    <span class="mw-band-sub">record &amp; track experiments</span>
+  </div>
+
   <!-- ================= ADD EVENT ================= -->
-  <h3>Add Event</h3>
   <div class="mw-grid">
     <div class="mw-field"><label>Date</label><input type="date" name="e_date" id="e_date"></div>
     <div class="mw-field"><label>Event Type</label>
@@ -175,7 +207,6 @@
     </select>
     <button type="button" class="mw-btn sec" id="collapseallbtn">Collapse All</button>
     <button type="button" class="mw-btn sec" id="expandallbtn">Expand All</button>
-    <button type="button" class="mw-btn sec" id="exportbtn">Generate CSV Export</button>
   </div>
   <table class="mw-table" id="logtable">
     <thead>
@@ -187,7 +218,19 @@
   </table>
   <div class="mw-note">Events are grouped by mouse. Use the filter to view a single animal. Age is auto-calculated from DOB.</div>
 
-  <!-- ================= EXPORT BOX ================= -->
+  <!-- ================= DATA EXCHANGE ZONE ================= -->
+  <div class="mw-band">
+    <span class="mw-band-ico">&#128190;</span>
+    <span>Data Exchange</span>
+    <span class="mw-band-sub">export &amp; import your records</span>
+  </div>
+
+  <!-- ---- Export ---- -->
+  <h3>Export to CSV</h3>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="exportbtn">Generate CSV Export</button>
+    <span class="mw-note" style="margin-top:0;">Creates a spreadsheet-ready table of all mice and events (one row per mouse per event).</span>
+  </div>
   <div class="mw-field mw-span3" id="exportwrap" style="display:none;margin-top:10px;">
     <label>CSV export — click inside, Select All (Ctrl/Cmd+A), Copy, paste into a spreadsheet or a LabArchives attachment</label>
     <textarea name="exportbox" id="exportbox" readonly style="min-height:120px;font-family:monospace;font-size:11px;"></textarea>
@@ -198,11 +241,11 @@
     </div>
   </div>
 
-  <!-- ================= IMPORT / MERGE ================= -->
-  <h3>Import / Merge CSV</h3>
+  <!-- ---- Import ---- -->
+  <h3 style="margin-top:18px;">Import / Merge from CSV</h3>
   <div class="mw-field mw-span3">
-    <label>Paste CSV here (same column format as the export), then set the options below and click Import</label>
-    <textarea name="importbox" id="importbox" placeholder="Mouse ID,Ear Tag,Sex,Cage,Group,DOB,Age,Genotype,Strain,Event Date,Event Type,Experimenter,File Location,Protocol,Details,Mouse Note" style="min-height:110px;font-family:monospace;font-size:11px;"></textarea>
+    <label>Paste CSV or Excel rows here (same columns as the export), set the options below, then click Import</label>
+    <textarea name="importbox" id="importbox" placeholder="Mouse ID,Ear Tag,Sex,Cage,Group,DOB,Age,Genotype,Strain,Event Date,Age at Event,Event Type,Experimenter,File Location,Protocol,Details,Mouse Note" style="min-height:110px;font-family:monospace;font-size:11px;"></textarea>
   </div>
   <div class="mw-bar">
     <span style="font-size:11px;font-weight:bold;color:#6b7885;">If a Mouse ID already exists:</span>
@@ -219,6 +262,6 @@
     <button type="button" class="mw-btn sec" id="clearimportbtn">Clear Box</button>
     <span class="mw-msg" id="importmsg"></span>
   </div>
-  <div class="mw-note">Import expects the exported column order. An "event" is considered the same if Mouse ID + Event Date + Event Type match.</div>
+  <div class="mw-note">Import auto-detects tab or comma separators and matches columns by header name. An event is treated as the same if Mouse ID + Event Date + Event Type match.</div>
 
 </div>
