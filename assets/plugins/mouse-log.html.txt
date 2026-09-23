@@ -64,13 +64,13 @@
     </div>
     <div class="mw-field"><label>Cage Number</label><input type="text" name="m_cage" id="m_cage" placeholder="C-117"></div>
     <div class="mw-field"><label>Group / Batch</label><input type="text" name="m_group" id="m_group" placeholder="batch1"></div>
-    <div class="mw-field"><label>Date of Birth</label><input type="text" name="m_dob" id="m_dob" placeholder="MM/DD/YYYY"></div>
+    <div class="mw-field"><label>Date of Birth</label><input type="date" name="m_dob" id="m_dob"></div>
     <div class="mw-field"><label>Strain / Background</label><input type="text" name="m_strain" id="m_strain" placeholder="C57BL/6J"></div>
     <div class="mw-field mw-span2"><label>Genotype</label>
       <select name="m_genotype" id="m_genotype">
         <option value="">-- select --</option>
         <option value="wt">WT</option>
-        <option value="GluT2-Cre">GluT2-Cre</option>
+        <option value="VGluT2-Cre">VGluT2-Cre</option>
         <option value="VGAT-cre">VGAT-cre</option>
         <option value="TH-Cre">TH-Cre</option>
         <option value="ORX-Cre">ORX-Cre</option>
@@ -105,7 +105,7 @@
   <!-- ================= ADD EVENT ================= -->
   <h3>Add Event</h3>
   <div class="mw-grid">
-    <div class="mw-field"><label>Date</label><input type="text" name="e_date" id="e_date" placeholder="MM/DD/YYYY"></div>
+    <div class="mw-field"><label>Date</label><input type="date" name="e_date" id="e_date"></div>
     <div class="mw-field"><label>Event Type</label>
       <select name="e_type" id="e_type">
         <option value="weaning">Weaning</option>
@@ -167,6 +167,11 @@
     <label style="font-size:11px;font-weight:bold;color:#6b7885;">Filter by mouse:</label>
     <select name="filtermouse" id="filtermouse" style="width:auto;min-width:160px;">
       <option value="__all__">All mice (grouped)</option>
+    </select>
+    <label style="font-size:11px;font-weight:bold;color:#6b7885;">Sort:</label>
+    <select name="sortorder" id="sortorder" style="width:auto;">
+      <option value="oldest">Oldest first</option>
+      <option value="newest">Newest first</option>
     </select>
     <button type="button" class="mw-btn sec" id="exportbtn">Generate CSV Export</button>
   </div>

@@ -20,15 +20,44 @@ my_widget_script =
   },
 
   mw_today: function () {
+    // type="date" inputs require YYYY-MM-DD as their value
     var d = new Date();
     var mm = ('0' + (d.getMonth() + 1)).slice(-2);
     var dd = ('0' + d.getDate()).slice(-2);
-    return mm + '/' + dd + '/' + d.getFullYear();
+    return d.getFullYear() + '-' + mm + '-' + dd;
   },
 
   mw_trim: function (s) {
     if (s === null || s === undefined) { return ''; }
     return String(s).replace(/^\s+/, '').replace(/\s+$/, '');
+  },
+
+  // Sort events by parsed date. Direction follows the Sort dropdown
+  // (oldest first by default). Works for YYYY-MM-DD and MM/DD/YYYY.
+  mw_sortEvents: function () {
+    var self = this;
+    var dir = 1;
+    var ssel = document.getElementById('sortorder');
+    if (ssel && ssel.value === 'newest') { dir = -1; }
+    this.mw_events.sort(function (a, b) {
+      var da = self.mw_parseDate(a.date);
+      var db = self.mw_parseDate(b.date);
+      var ta = da ? da.getTime() : 0;
+      var tb = db ? db.getTime() : 0;
+      if (ta < tb) { return -1 * dir; }
+      if (ta > tb) { return 1 * dir; }
+      return 0;
+    });
+  },
+
+  // Age of a mouse (by DOB) on a specific event date. Blank if no/invalid DOB.
+  mw_ageAt: function (dob, eventDate) {
+    var d0 = this.mw_parseDate(dob);
+    var d1 = this.mw_parseDate(eventDate);
+    if (!d0 || !d1) { return ''; }
+    var days = Math.floor((d1.getTime() - d0.getTime()) / 86400000);
+    if (days < 0) { return ''; }
+    return days + 'd (' + Math.floor(days / 7) + 'w)';
   },
 
   // parse MM/DD/YYYY (also tolerates YYYY-MM-DD from older data)
@@ -565,11 +594,7 @@ my_widget_script =
       ev.photos = this.mw_stagePhotos.slice(0);
       ev.perMouse = perMouse;
 
-      this.mw_events.sort(function (a, b) {
-        if (a.date < b.date) { return 1; }
-        if (a.date > b.date) { return -1; }
-        return 0;
-      });
+      this.mw_sortEvents();
       this.mw_endEventEdit();
       this.mw_clearEvent();
       this.mw_renderLog();
@@ -590,11 +615,7 @@ my_widget_script =
     nev.perMouse = perMouse;
     this.mw_events.push(nev);
 
-    this.mw_events.sort(function (a, b) {
-      if (a.date < b.date) { return 1; }
-      if (a.date > b.date) { return -1; }
-      return 0;
-    });
+    this.mw_sortEvents();
 
     this.mw_clearEvent();
     this.mw_renderLog();
@@ -740,8 +761,16 @@ my_widget_script =
       }
     }
     if (!dcell) { dcell = '&mdash;'; }
+    // build the meta line: age-at-event, experimenter, file location
     var meta = '';
-    if (ev.user) { meta = meta + 'By: ' + this.mw_esc(ev.user); }
+    if (forMouseId) {
+      var fm = this.mw_findMouse(forMouseId);
+      if (fm && fm.dob) {
+        var ageAt = this.mw_ageAt(fm.dob, ev.date);
+        if (ageAt) { meta = 'Age: ' + ageAt; }
+      }
+    }
+    if (ev.user) { if (meta) { meta = meta + ' | '; } meta = meta + 'By: ' + this.mw_esc(ev.user); }
     if (ev.fileloc) {
       if (meta) { meta = meta + ' | '; }
       meta = meta + 'File: ' + this.mw_esc(ev.fileloc);
@@ -887,7 +916,7 @@ my_widget_script =
   mw_buildCsv: function () {
     var rows = [];
     var header = ['Mouse ID', 'Ear Tag', 'Sex', 'Cage', 'Group', 'DOB', 'Age', 'Genotype', 'Strain',
-                  'Event Date', 'Event Type', 'Experimenter', 'File Location', 'Protocol', 'Details', 'Mouse Note'];
+                  'Event Date', 'Age at Event', 'Event Type', 'Experimenter', 'File Location', 'Protocol', 'Details', 'Mouse Note'];
     rows.push(header);
 
     var i;
@@ -896,14 +925,14 @@ my_widget_script =
       var evs = this.mw_eventsForMouse(m.id);
       if (evs.length === 0) {
         rows.push([m.id, m.eartag, m.sex, m.cage, m.group || '', m.dob, this.mw_ageStr(m.dob), m.genotype, m.strain,
-                   '', '', '', '', '', '', '']);
+                   '', '', '', '', '', '', '', '']);
       } else {
         var r;
         for (r = 0; r < evs.length; r++) {
           var ev = evs[r].ev;
           var note = (ev.perMouse && ev.perMouse[m.id]) ? ev.perMouse[m.id] : '';
           rows.push([m.id, m.eartag, m.sex, m.cage, m.group || '', m.dob, this.mw_ageStr(m.dob), m.genotype, m.strain,
-                     ev.date, ev.type, ev.user || '', ev.fileloc || '', ev.protocol, ev.details, note]);
+                     ev.date, this.mw_ageAt(m.dob, ev.date), ev.type, ev.user || '', ev.fileloc || '', ev.protocol, ev.details, note]);
         }
       }
     }
@@ -1179,12 +1208,6 @@ my_widget_script =
       }
     }
 
-    this.mw_events.sort(function (a, b) {
-      if (a.date < b.date) { return 1; }
-      if (a.date > b.date) { return -1; }
-      return 0;
-    });
-
     this.mw_renderAll();
     var summary = 'Mice +' + added.mice + ' / upd ' + updated.mice + ' / skip ' + skipped.mice +
                   '  |  Events +' + added.events + ' / upd ' + updated.events + ' / skip ' + skipped.events;
@@ -1224,6 +1247,12 @@ my_widget_script =
     if (fsel && !fsel.getAttribute('data-mw')) {
       fsel.setAttribute('data-mw', '1');
       fsel.addEventListener('change', function () { self.mw_renderLog(); });
+    }
+
+    var ssel = document.getElementById('sortorder');
+    if (ssel && !ssel.getAttribute('data-mw')) {
+      ssel.setAttribute('data-mw', '1');
+      ssel.addEventListener('change', function () { self.mw_sortEvents(); self.mw_renderLog(); });
     }
 
     var ed = document.getElementById('e_date');
