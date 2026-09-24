@@ -1,14 +1,15 @@
 my_widget_script =
 {
   // ================= data =================
-  mw_mice: [],    // [{id, eartag, sex, cage, dob, strain, genotype}]
-  mw_events: [],  // [{date, type, protocol, user, fileloc, details, mice:[id,...]}]
-  mw_editId: null, // id of mouse currently being edited, or null
-  mw_editEventIdx: null, // index of event currently being edited, or null
-  mw_stagePhotos: [], // data-URL strings staged for the event being composed/edited
-  mw_stagePerMouse: {}, // { mouseId: "note" } staged per-mouse details
-  mw_collapsed: {}, // { mouseId: true } collapsed groups in the log view
-  mw_rosterCollapsed: false, // whether the roster table is collapsed
+  mw_mice: [],
+  mw_events: [],
+  mw_editId: null,
+  mw_editEventIdx: null,
+  mw_stagePhotos: [],          // shared photos for the event being composed
+  mw_stagePerMouse: {},        // { mouseId: "note" }
+  mw_stagePerMousePhotos: {},  // { mouseId: [dataUrl, ...] }  <-- per-mouse photos
+  mw_collapsed: {},
+  mw_rosterCollapsed: false,
 
   // ================= helpers =================
   mw_esc: function (s) {
@@ -22,7 +23,6 @@ my_widget_script =
   },
 
   mw_today: function () {
-    // type="date" inputs require YYYY-MM-DD as their value
     var d = new Date();
     var mm = ('0' + (d.getMonth() + 1)).slice(-2);
     var dd = ('0' + d.getDate()).slice(-2);
@@ -34,8 +34,6 @@ my_widget_script =
     return String(s).replace(/^\s+/, '').replace(/\s+$/, '');
   },
 
-  // Sort events by parsed date. Direction follows the Sort dropdown
-  // (oldest first by default). Works for YYYY-MM-DD and MM/DD/YYYY.
   mw_sortEvents: function () {
     var self = this;
     var dir = 1;
@@ -52,7 +50,6 @@ my_widget_script =
     });
   },
 
-  // Age of a mouse (by DOB) on a specific event date. Blank if no/invalid DOB.
   mw_ageAt: function (dob, eventDate) {
     var d0 = this.mw_parseDate(dob);
     var d1 = this.mw_parseDate(eventDate);
@@ -62,15 +59,12 @@ my_widget_script =
     return days + 'd (' + Math.floor(days / 7) + 'w)';
   },
 
-  // parse MM/DD/YYYY (also tolerates YYYY-MM-DD from older data)
   mw_parseDate: function (s) {
     if (!s) { return null; }
     s = this.mw_trim(s);
     var m;
-    // MM/DD/YYYY
     m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (m) { return new Date(parseInt(m[3],10), parseInt(m[1],10)-1, parseInt(m[2],10)); }
-    // YYYY-MM-DD (legacy)
     m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (m) { return new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10)); }
     var d = new Date(s);
@@ -112,11 +106,34 @@ my_widget_script =
     return null;
   },
 
+  // Shared image downscaler -> callback(dataUrl). Used by shared + per-mouse.
+  mw_shrinkImage: function (file, cb) {
+    var maxDim = 800;
+    if (!file.type || file.type.indexOf('image/') !== 0) { return; }
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.width, h = img.height;
+        if (w > h) { if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; } }
+        else { if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; } }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var dataUrl;
+        try { dataUrl = canvas.toDataURL('image/jpeg', 0.7); } catch (err) { dataUrl = ''; }
+        if (dataUrl) { cb(dataUrl); }
+      };
+      img.onerror = function () {};
+      img.src = ev.target.result;
+    };
+    reader.onerror = function () {};
+    reader.readAsDataURL(file);
+  },
+
   // ================= add / update / remove mouse =================
   mw_readMouseForm: function () {
-    // Genotype: the text field is the single source of truth. The dropdown
-    // only auto-fills it. This keeps records valid even if the dropdown
-    // options change later.
     var m = {};
     m.id = this.mw_trim(document.getElementById('m_id').value);
     m.eartag = this.mw_trim(document.getElementById('m_eartag').value);
@@ -134,58 +151,43 @@ my_widget_script =
     if (!m.id) { this.mw_msg('mousemsg', 'Mouse ID is required.', true); return; }
 
     if (this.mw_editId) {
-      // ---- update existing mouse ----
       var oldId = this.mw_editId;
-      // if ID changed, make sure the new one isn't a duplicate of a different mouse
       if (m.id !== oldId && this.mw_findMouse(m.id)) {
         this.mw_msg('mousemsg', 'That Mouse ID already exists.', true); return;
       }
       var target = this.mw_findMouse(oldId);
       if (target) {
-        target.id = m.id;
-        target.eartag = m.eartag;
-        target.sex = m.sex;
-        target.cage = m.cage;
-        target.group = m.group;
-        target.dob = m.dob;
-        target.strain = m.strain;
-        target.genotype = m.genotype;
+        target.id = m.id; target.eartag = m.eartag; target.sex = m.sex;
+        target.cage = m.cage; target.group = m.group; target.dob = m.dob;
+        target.strain = m.strain; target.genotype = m.genotype;
       }
-      // if the ID was renamed, update it inside every event's mice list
+      // rename inside events' mice lists AND per-mouse maps
       if (m.id !== oldId) {
         var k;
         for (k = 0; k < this.mw_events.length; k++) {
-          var arr = this.mw_events[k].mice;
+          var ev = this.mw_events[k];
           var n;
-          for (n = 0; n < arr.length; n++) {
-            if (arr[n] === oldId) { arr[n] = m.id; }
-          }
+          for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] === oldId) { ev.mice[n] = m.id; } }
+          if (ev.perMouse && ev.perMouse[oldId] !== undefined) { ev.perMouse[m.id] = ev.perMouse[oldId]; delete ev.perMouse[oldId]; }
+          if (ev.perMousePhotos && ev.perMousePhotos[oldId] !== undefined) { ev.perMousePhotos[m.id] = ev.perMousePhotos[oldId]; delete ev.perMousePhotos[oldId]; }
         }
       }
       this.mw_endEdit();
-      this.mw_renderRoster();
-      this.mw_renderMiceChecks();
-      this.mw_renderGroupControls();
-      this.mw_renderFilter();
-      this.mw_renderLog();
+      this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls();
+      this.mw_renderFilter(); this.mw_renderLog();
       this.mw_msg('mousemsg', 'Mouse updated.', false);
+      if (window.MLmarkDirty) { window.MLmarkDirty(); }
       return;
     }
 
-    // ---- add new mouse ----
     if (this.mw_findMouse(m.id)) { this.mw_msg('mousemsg', 'That Mouse ID already exists.', true); return; }
     this.mw_mice.push(m);
-    // NOTE: fields are intentionally NOT cleared, so shared values
-    // (cage, DOB, strain, genotype) carry to the next littermate.
-    // Only clear the two fields that must be unique per animal.
     document.getElementById('m_id').value = '';
     document.getElementById('m_eartag').value = '';
-    this.mw_renderRoster();
-    this.mw_renderMiceChecks();
-    this.mw_renderGroupControls();
-    this.mw_renderFilter();
-    this.mw_renderLog();
+    this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls();
+    this.mw_renderFilter(); this.mw_renderLog();
     this.mw_msg('mousemsg', 'Mouse added. Shared fields kept for next littermate.', false);
+    if (window.MLmarkDirty) { window.MLmarkDirty(); }
   },
 
   mw_editMouse: function (mid) {
@@ -198,9 +200,6 @@ my_widget_script =
     document.getElementById('m_group').value = m.group || '';
     document.getElementById('m_dob').value = m.dob;
     document.getElementById('m_strain').value = m.strain;
-
-    // genotype: text field is the source of truth; set dropdown to match
-    // if an option equals the stored value, else leave dropdown on Other.
     document.getElementById('m_genotypeother').value = m.genotype || '';
     var gsel = document.getElementById('m_genotype');
     var matched = this.mw_valueForText('m_genotype', m.genotype);
@@ -214,42 +213,30 @@ my_widget_script =
     var cbtn = document.getElementById('clearmousebtn');
     if (cbtn) { cbtn.textContent = 'Cancel Edit'; }
     this.mw_msg('mousemsg', 'Editing ' + mid + ' - make changes and click Update.', false);
-    // bring the form into view
     var idf = document.getElementById('m_id');
     if (idf && idf.scrollIntoView) { idf.scrollIntoView({ block: 'center' }); }
   },
 
-  // find the option value whose text OR value matches a stored string
   mw_valueForText: function (selId, str) {
     var sel = document.getElementById(selId);
     if (!sel) { return ''; }
     var i;
     for (i = 0; i < sel.options.length; i++) {
-      if (sel.options[i].text === str || sel.options[i].value === str) {
-        return sel.options[i].value;
-      }
+      if (sel.options[i].text === str || sel.options[i].value === str) { return sel.options[i].value; }
     }
     return '';
   },
 
   mw_endEdit: function () {
     this.mw_editId = null;
-    var btn = document.getElementById('addmousebtn');
-    if (btn) { btn.textContent = 'Add Mouse'; }
-    var cbtn = document.getElementById('clearmousebtn');
-    if (cbtn) { cbtn.textContent = 'Clear'; }
+    var btn = document.getElementById('addmousebtn'); if (btn) { btn.textContent = 'Add Mouse'; }
+    var cbtn = document.getElementById('clearmousebtn'); if (cbtn) { cbtn.textContent = 'Clear'; }
   },
 
   mw_clearMouse: function () {
-    document.getElementById('m_id').value = '';
-    document.getElementById('m_eartag').value = '';
-    document.getElementById('m_sex').value = '';
-    document.getElementById('m_cage').value = '';
-    document.getElementById('m_group').value = '';
-    document.getElementById('m_dob').value = '';
-    document.getElementById('m_strain').value = '';
-    document.getElementById('m_genotype').value = '';
-    document.getElementById('m_genotypeother').value = '';
+    var ids = ['m_id','m_eartag','m_sex','m_cage','m_group','m_dob','m_strain','m_genotype','m_genotypeother'];
+    var i;
+    for (i = 0; i < ids.length; i++) { document.getElementById(ids[i]).value = ''; }
     this.mw_endEdit();
   },
 
@@ -258,33 +245,28 @@ my_widget_script =
     for (i = 0; i < this.mw_mice.length; i++) {
       if (this.mw_mice[i].id === mid) { this.mw_mice.splice(i, 1); break; }
     }
-    // drop this mouse from any event; remove events left with no mice
     var keep = [];
     var k;
     for (k = 0; k < this.mw_events.length; k++) {
       var ev = this.mw_events[k];
       var m2 = [];
       var n;
-      for (n = 0; n < ev.mice.length; n++) {
-        if (ev.mice[n] !== mid) { m2.push(ev.mice[n]); }
-      }
+      for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] !== mid) { m2.push(ev.mice[n]); } }
       ev.mice = m2;
+      if (ev.perMouse && ev.perMouse[mid] !== undefined) { delete ev.perMouse[mid]; }
+      if (ev.perMousePhotos && ev.perMousePhotos[mid] !== undefined) { delete ev.perMousePhotos[mid]; }
       if (ev.mice.length > 0) { keep.push(ev); }
     }
     this.mw_events = keep;
-
-    this.mw_renderRoster();
-    this.mw_renderMiceChecks();
-    this.mw_renderGroupControls();
-    this.mw_renderFilter();
-    this.mw_renderLog();
+    this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls();
+    this.mw_renderFilter(); this.mw_renderLog();
+    if (window.MLmarkDirty) { window.MLmarkDirty(); }
   },
 
   mw_renderRoster: function () {
     var self = this;
     var body = document.getElementById('rosterbody');
     if (!body) { return; }
-
     if (this.mw_mice.length === 0) {
       body.innerHTML = '<' + 'tr><' + 'td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.<' + '/td><' + '/tr>';
       this.mw_applyRosterCollapse();
@@ -315,27 +297,19 @@ my_widget_script =
     var edits = body.querySelectorAll('.mw-editmouse');
     var q;
     for (q = 0; q < edits.length; q++) {
-      edits[q].addEventListener('click', function () {
-        self.mw_editMouse(this.getAttribute('data-id'));
-      });
+      edits[q].addEventListener('click', function () { self.mw_editMouse(this.getAttribute('data-id')); });
     }
-
     var dels = body.querySelectorAll('.mw-delmouse');
     var j;
     for (j = 0; j < dels.length; j++) {
-      dels[j].addEventListener('click', function () {
-        self.mw_removeMouse(this.getAttribute('data-id'));
-      });
+      dels[j].addEventListener('click', function () { self.mw_removeMouse(this.getAttribute('data-id')); });
     }
-
     this.mw_applyRosterCollapse();
   },
 
   // ================= groups =================
   mw_groupList: function () {
-    var seen = {};
-    var out = [];
-    var i;
+    var seen = {}; var out = []; var i;
     for (i = 0; i < this.mw_mice.length; i++) {
       var g = this.mw_mice[i].group;
       if (g && !seen[g]) { seen[g] = true; out.push(g); }
@@ -355,9 +329,7 @@ my_widget_script =
       html = html + '<' + 'option value="' + this.mw_esc(groups[i]) + '">' + this.mw_esc(groups[i]) + '<' + '/option>';
     }
     sel.innerHTML = html;
-    // restore previous selection if still valid
-    var found = false;
-    var o;
+    var found = false; var o;
     for (o = 0; o < sel.options.length; o++) { if (sel.options[o].value === prev) { found = true; break; } }
     sel.value = found ? prev : '';
   },
@@ -367,8 +339,7 @@ my_widget_script =
     if (!sel || !sel.value) { this.mw_msg('eventmsg', 'Pick a group first.', true); return; }
     var g = sel.value;
     var chks = document.querySelectorAll('.mw-micechk');
-    var count = 0;
-    var i;
+    var count = 0; var i;
     for (i = 0; i < chks.length; i++) {
       var m = this.mw_findMouse(chks[i].value);
       if (m && m.group === g) { chks[i].checked = true; count++; }
@@ -403,7 +374,6 @@ my_widget_script =
     }
     box.innerHTML = html;
 
-    // re-render per-mouse note inputs whenever the checked set changes
     var self = this;
     var chks = box.querySelectorAll('.mw-micechk');
     var c;
@@ -417,28 +387,21 @@ my_widget_script =
     var out = [];
     var chks = document.querySelectorAll('.mw-micechk');
     var i;
-    for (i = 0; i < chks.length; i++) {
-      if (chks[i].checked) { out.push(chks[i].value); }
-    }
+    for (i = 0; i < chks.length; i++) { if (chks[i].checked) { out.push(chks[i].value); } }
     return out;
   },
 
-  // Render a note input for each currently-checked mouse, preserving
-  // any text already typed (and any values in mw_stagePerMouse).
+  // Render note input + photo picker + photo thumbnails for each checked mouse.
   mw_renderPerMouse: function () {
+    var self = this;
     var wrap = document.getElementById('e_permousewrap');
     var box = document.getElementById('e_permouse');
     if (!wrap || !box) { return; }
 
-    // capture current typed values before rebuilding
     this.mw_capturePerMouse();
 
     var checked = this.mw_getCheckedMice();
-    if (checked.length === 0) {
-      box.innerHTML = '';
-      wrap.style.display = 'none';
-      return;
-    }
+    if (checked.length === 0) { box.innerHTML = ''; wrap.style.display = 'none'; return; }
     wrap.style.display = 'block';
 
     var html = '';
@@ -449,16 +412,33 @@ my_widget_script =
       var lbl = this.mw_esc(mid);
       if (m && m.eartag) { lbl = lbl + ' (' + this.mw_esc(m.eartag) + ')'; }
       var val = this.mw_stagePerMouse[mid] ? this.mw_esc(this.mw_stagePerMouse[mid]) : '';
-      html = html + '<' + 'div class="mw-pmrow">' +
-             '<' + 'span class="mw-pmlabel">' + lbl + '<' + '/span>' +
-             '<' + 'input type="text" class="mw-pminput" data-id="' + this.mw_esc(mid) + '" value="' + val + '" placeholder="note specific to this mouse">' +
-             '<' + '/div>';
+      var eid = this.mw_esc(mid);
+
+      html = html + '<' + 'div class="mw-pmrow">';
+      html = html + '<' + 'span class="mw-pmlabel">' + lbl + '<' + '/span>';
+      html = html + '<' + 'div class="mw-pmfields">';
+      html = html + '<' + 'input type="text" class="mw-pminput" data-id="' + eid + '" value="' + val + '" placeholder="note specific to this mouse">';
+      html = html + '<' + 'div style="margin-top:4px;"><' + 'label style="font-size:10px;color:#6b7885;font-weight:bold;">Photos for this mouse: <' + '/label>';
+      html = html + '<' + 'input type="file" class="mw-pmphotoinput" data-id="' + eid + '" accept="image/*" multiple style="font-size:11px;"><' + '/div>';
+      html = html + '<' + 'div class="mw-pmphotos" data-id="' + eid + '"><' + '/div>';
+      html = html + '<' + '/div>';
+      html = html + '<' + '/div>';
     }
     box.innerHTML = html;
+
+    // wire photo inputs
+    var inputs = box.querySelectorAll('.mw-pmphotoinput');
+    var a;
+    for (a = 0; a < inputs.length; a++) {
+      inputs[a].addEventListener('change', function () {
+        self.mw_handlePerMousePhotoInput(this.getAttribute('data-id'), this.files);
+        this.value = '';
+      });
+    }
+    // draw any staged per-mouse photo thumbnails
+    for (i = 0; i < checked.length; i++) { this.mw_renderPerMousePhotos(checked[i]); }
   },
 
-  // Read current per-mouse inputs into mw_stagePerMouse (so values
-  // survive re-render when the checked set changes).
   mw_capturePerMouse: function () {
     var ins = document.querySelectorAll('.mw-pminput');
     var i;
@@ -470,51 +450,62 @@ my_widget_script =
     }
   },
 
-  // ================= photos (downscaled thumbnails) =================
-  // Read chosen files, shrink each to <= maxDim and JPEG-compress, then
-  // push the resulting data URL into mw_stagePhotos and re-render preview.
+  mw_handlePerMousePhotoInput: function (mid, fileList) {
+    var self = this;
+    if (!fileList || fileList.length === 0) { return; }
+    if (!this.mw_stagePerMousePhotos[mid]) { this.mw_stagePerMousePhotos[mid] = []; }
+    var i;
+    for (i = 0; i < fileList.length; i++) {
+      this.mw_shrinkImage(fileList[i], function (dataUrl) {
+        self.mw_stagePerMousePhotos[mid].push(dataUrl);
+        self.mw_renderPerMousePhotos(mid);
+      });
+    }
+  },
+
+  mw_renderPerMousePhotos: function (mid) {
+    var self = this;
+    var box = document.querySelector('.mw-pmphotos[data-id="' + mid.replace(/"/g,'') + '"]');
+    if (!box) { return; }
+    var arr = this.mw_stagePerMousePhotos[mid] || [];
+    if (arr.length === 0) { box.innerHTML = ''; return; }
+    var html = '';
+    var i;
+    for (i = 0; i < arr.length; i++) {
+      html = html + '<' + 'span class="mw-pmthumb">' +
+             '<' + 'img src="' + arr[i] + '" data-mid="' + this.mw_esc(mid) + '" data-i="' + i + '" class="mw-pmthumbimg">' +
+             '<' + 'button type="button" class="mw-pmthumbx" data-mid="' + this.mw_esc(mid) + '" data-i="' + i + '">x<' + '/button>' +
+             '<' + '/span>';
+    }
+    box.innerHTML = html;
+
+    var xs = box.querySelectorAll('.mw-pmthumbx');
+    var a;
+    for (a = 0; a < xs.length; a++) {
+      xs[a].addEventListener('click', function () {
+        var mm = this.getAttribute('data-mid');
+        var ix = parseInt(this.getAttribute('data-i'), 10);
+        if (self.mw_stagePerMousePhotos[mm]) { self.mw_stagePerMousePhotos[mm].splice(ix, 1); self.mw_renderPerMousePhotos(mm); }
+      });
+    }
+    var ims = box.querySelectorAll('.mw-pmthumbimg');
+    var b;
+    for (b = 0; b < ims.length; b++) {
+      ims[b].addEventListener('click', function () { self.mw_openPhoto(this.getAttribute('src')); });
+    }
+  },
+
+  // ================= shared photos =================
   mw_handlePhotoInput: function (fileList) {
     var self = this;
     if (!fileList || fileList.length === 0) { return; }
-    var maxDim = 800;
     var i;
     for (i = 0; i < fileList.length; i++) {
-      (function (file) {
-        if (!file.type || file.type.indexOf('image/') !== 0) { return; }
-        var reader = new FileReader();
-        reader.onload = function (ev) {
-          var img = new Image();
-          img.onload = function () {
-            var w = img.width, h = img.height;
-            if (w > h) {
-              if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
-            } else {
-              if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
-            }
-            var canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            var dataUrl;
-            try { dataUrl = canvas.toDataURL('image/jpeg', 0.7); }
-            catch (err) { dataUrl = ''; }
-            if (dataUrl) {
-              self.mw_stagePhotos.push(dataUrl);
-              self.mw_renderStagePhotos();
-            }
-          };
-          img.onerror = function () {
-            self.mw_msg('eventmsg', 'Could not read one image.', true);
-          };
-          img.src = ev.target.result;
-        };
-        reader.onerror = function () {
-          self.mw_msg('eventmsg', 'File read blocked in this view.', true);
-        };
-        reader.readAsDataURL(file);
-      })(fileList[i]);
+      this.mw_shrinkImage(fileList[i], function (dataUrl) {
+        self.mw_stagePhotos.push(dataUrl);
+        self.mw_renderStagePhotos();
+      });
     }
-    // reset the input so the same file can be re-picked if needed
     var inp = document.getElementById('e_photos');
     if (inp) { inp.value = ''; }
   },
@@ -545,43 +536,43 @@ my_widget_script =
     var ims = box.querySelectorAll('.mw-stagethumb');
     var b;
     for (b = 0; b < ims.length; b++) {
-      ims[b].addEventListener('click', function () {
-        self.mw_openPhoto(this.getAttribute('src'));
-      });
+      ims[b].addEventListener('click', function () { self.mw_openPhoto(this.getAttribute('src')); });
     }
   },
 
-  // Open a photo in a new tab/window. Sandbox may block window.open; if
-  // so, the thumbnail itself is still visible inline.
   mw_openPhoto: function (dataUrl) {
     try {
       var w = window.open();
-      if (w && w.document) {
-        w.document.write('<' + 'img src="' + dataUrl + '" style="max-width:100%">');
-      }
-    } catch (err) {
-      // silently ignore; inline thumbnail remains available
-    }
+      if (w && w.document) { w.document.write('<' + 'img src="' + dataUrl + '" style="max-width:100%">'); }
+    } catch (err) {}
   },
 
   // ================= add / update / remove event =================
+  mw_collectPerMouseData: function (mice) {
+    // returns {perMouse:{}, perMousePhotos:{}} limited to the given mice
+    this.mw_capturePerMouse();
+    var perMouse = {};
+    var perMousePhotos = {};
+    var i;
+    for (i = 0; i < mice.length; i++) {
+      var mid = mice[i];
+      if (this.mw_stagePerMouse[mid]) { perMouse[mid] = this.mw_stagePerMouse[mid]; }
+      if (this.mw_stagePerMousePhotos[mid] && this.mw_stagePerMousePhotos[mid].length) {
+        perMousePhotos[mid] = this.mw_stagePerMousePhotos[mid].slice(0);
+      }
+    }
+    return { perMouse: perMouse, perMousePhotos: perMousePhotos };
+  },
+
   mw_addEvent: function () {
     var date = document.getElementById('e_date').value;
     if (!date) { this.mw_msg('eventmsg', 'Event date is required.', true); return; }
     var mice = this.mw_getCheckedMice();
     if (mice.length === 0) { this.mw_msg('eventmsg', 'Select at least one mouse.', true); return; }
-    this.mw_capturePerMouse();
 
-    // build a per-mouse note map limited to the mice on this event
-    var perMouse = {};
-    var pmI;
-    for (pmI = 0; pmI < mice.length; pmI++) {
-      if (this.mw_stagePerMouse[mice[pmI]]) { perMouse[mice[pmI]] = this.mw_stagePerMouse[mice[pmI]]; }
-    }
+    var pm = this.mw_collectPerMouseData(mice);
 
-    if (this.mw_editEventIdx !== null && this.mw_editEventIdx >= 0 &&
-        this.mw_editEventIdx < this.mw_events.length) {
-      // ---- update existing event ----
+    if (this.mw_editEventIdx !== null && this.mw_editEventIdx >= 0 && this.mw_editEventIdx < this.mw_events.length) {
       var ev = this.mw_events[this.mw_editEventIdx];
       ev.date = this.mw_trim(date);
       ev.type = this.mw_selText('e_type');
@@ -591,17 +582,14 @@ my_widget_script =
       ev.details = this.mw_trim(document.getElementById('e_details').value);
       ev.mice = mice;
       ev.photos = this.mw_stagePhotos.slice(0);
-      ev.perMouse = perMouse;
-
-      this.mw_sortEvents();
-      this.mw_endEventEdit();
-      this.mw_clearEvent();
-      this.mw_renderLog();
+      ev.perMouse = pm.perMouse;
+      ev.perMousePhotos = pm.perMousePhotos;
+      this.mw_sortEvents(); this.mw_endEventEdit(); this.mw_clearEvent(); this.mw_renderLog();
       this.mw_msg('eventmsg', 'Event updated.', false);
+      if (window.MLmarkDirty) { window.MLmarkDirty(); }
       return;
     }
 
-    // ---- add new event ----
     var nev = {};
     nev.date = this.mw_trim(date);
     nev.type = this.mw_selText('e_type');
@@ -611,14 +599,12 @@ my_widget_script =
     nev.details = this.mw_trim(document.getElementById('e_details').value);
     nev.mice = mice;
     nev.photos = this.mw_stagePhotos.slice(0);
-    nev.perMouse = perMouse;
+    nev.perMouse = pm.perMouse;
+    nev.perMousePhotos = pm.perMousePhotos;
     this.mw_events.push(nev);
-
-    this.mw_sortEvents();
-
-    this.mw_clearEvent();
-    this.mw_renderLog();
+    this.mw_sortEvents(); this.mw_clearEvent(); this.mw_renderLog();
     this.mw_msg('eventmsg', 'Event added.', false);
+    if (window.MLmarkDirty) { window.MLmarkDirty(); }
   },
 
   mw_editEvent: function (idx) {
@@ -632,93 +618,72 @@ my_widget_script =
     document.getElementById('e_fileloc').value = ev.fileloc || '';
     document.getElementById('e_details').value = ev.details || '';
 
-    // load this event's photos into the staging area
     this.mw_stagePhotos = (ev.photos && ev.photos.length) ? ev.photos.slice(0) : [];
     this.mw_renderStagePhotos();
 
-    // load per-mouse notes into staging
     this.mw_stagePerMouse = {};
     if (ev.perMouse) {
       var pk;
-      for (pk in ev.perMouse) {
-        if (ev.perMouse.hasOwnProperty(pk)) { this.mw_stagePerMouse[pk] = ev.perMouse[pk]; }
-      }
+      for (pk in ev.perMouse) { if (ev.perMouse.hasOwnProperty(pk)) { this.mw_stagePerMouse[pk] = ev.perMouse[pk]; } }
+    }
+    this.mw_stagePerMousePhotos = {};
+    if (ev.perMousePhotos) {
+      var pk2;
+      for (pk2 in ev.perMousePhotos) { if (ev.perMousePhotos.hasOwnProperty(pk2)) { this.mw_stagePerMousePhotos[pk2] = ev.perMousePhotos[pk2].slice(0); } }
     }
 
-    // tick the checkboxes for this event's mice
     var chks = document.querySelectorAll('.mw-micechk');
     var i;
     for (i = 0; i < chks.length; i++) {
-      var on = false;
-      var n;
+      var on = false; var n;
       for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] === chks[i].value) { on = true; break; } }
       chks[i].checked = on;
     }
     this.mw_renderPerMouse();
 
     this.mw_editEventIdx = idx;
-    var btn = document.getElementById('addeventbtn');
-    if (btn) { btn.textContent = 'Update Event'; }
-    var cbtn = document.getElementById('cleareventbtn');
-    if (cbtn) { cbtn.textContent = 'Cancel Edit'; }
+    var btn = document.getElementById('addeventbtn'); if (btn) { btn.textContent = 'Update Event'; }
+    var cbtn = document.getElementById('cleareventbtn'); if (cbtn) { cbtn.textContent = 'Cancel Edit'; }
     this.mw_msg('eventmsg', 'Editing event - make changes and click Update.', false);
-
-    var df = document.getElementById('e_date');
-    if (df && df.scrollIntoView) { df.scrollIntoView({ block: 'center' }); }
+    var df = document.getElementById('e_date'); if (df && df.scrollIntoView) { df.scrollIntoView({ block: 'center' }); }
   },
 
   mw_endEventEdit: function () {
     this.mw_editEventIdx = null;
-    var btn = document.getElementById('addeventbtn');
-    if (btn) { btn.textContent = 'Add Event'; }
-    var cbtn = document.getElementById('cleareventbtn');
-    if (cbtn) { cbtn.textContent = 'Clear'; }
+    var btn = document.getElementById('addeventbtn'); if (btn) { btn.textContent = 'Add Event'; }
+    var cbtn = document.getElementById('cleareventbtn'); if (cbtn) { cbtn.textContent = 'Clear'; }
   },
 
-  // Duplicate: load an event's info into the Add Event form as a NEW event
-  // (not edit mode). Date defaults to today; photos are not copied.
   mw_duplicateEvent: function (idx) {
     if (idx < 0 || idx >= this.mw_events.length) { return; }
     var ev = this.mw_events[idx];
-
-    // make sure we are in add-new mode, not editing
     this.mw_endEventEdit();
 
-    document.getElementById('e_date').value = this.mw_today(); // today
+    document.getElementById('e_date').value = this.mw_today();
     document.getElementById('e_type').value = this.mw_valueForText('e_type', ev.type) || ev.type || '';
     document.getElementById('e_protocol').value = ev.protocol || '';
     document.getElementById('e_user').value = ev.user || '';
     document.getElementById('e_fileloc').value = ev.fileloc || '';
     document.getElementById('e_details').value = ev.details || '';
 
-    // no photos on a duplicate
-    this.mw_stagePhotos = [];
+    this.mw_stagePhotos = []; // no photos on a duplicate
     this.mw_renderStagePhotos();
 
-    // copy per-mouse notes
     this.mw_stagePerMouse = {};
-    if (ev.perMouse) {
-      var pk;
-      for (pk in ev.perMouse) {
-        if (ev.perMouse.hasOwnProperty(pk)) { this.mw_stagePerMouse[pk] = ev.perMouse[pk]; }
-      }
-    }
+    if (ev.perMouse) { var pk; for (pk in ev.perMouse) { if (ev.perMouse.hasOwnProperty(pk)) { this.mw_stagePerMouse[pk] = ev.perMouse[pk]; } } }
+    this.mw_stagePerMousePhotos = {}; // no per-mouse photos on a duplicate either
 
-    // tick the same mice
     var chks = document.querySelectorAll('.mw-micechk');
     var i;
     for (i = 0; i < chks.length; i++) {
-      var on = false;
-      var n;
+      var on = false; var n;
       for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] === chks[i].value) { on = true; break; } }
       chks[i].checked = on;
     }
     this.mw_renderPerMouse();
 
     this.mw_msg('eventmsg', 'Copied to form - change the date/details and click Add Event.', false);
-
-    var df = document.getElementById('e_date');
-    if (df && df.scrollIntoView) { df.scrollIntoView({ block: 'center' }); }
+    var df = document.getElementById('e_date'); if (df && df.scrollIntoView) { df.scrollIntoView({ block: 'center' }); }
   },
 
   mw_clearEvent: function () {
@@ -730,9 +695,9 @@ my_widget_script =
     var chks = document.querySelectorAll('.mw-micechk');
     var i;
     for (i = 0; i < chks.length; i++) { chks[i].checked = false; }
-    this.mw_stagePhotos = [];
-    this.mw_renderStagePhotos();
+    this.mw_stagePhotos = []; this.mw_renderStagePhotos();
     this.mw_stagePerMouse = {};
+    this.mw_stagePerMousePhotos = {};
     this.mw_renderPerMouse();
     this.mw_endEventEdit();
   },
@@ -741,6 +706,7 @@ my_widget_script =
     if (idx >= 0 && idx < this.mw_events.length) {
       this.mw_events.splice(idx, 1);
       this.mw_renderLog();
+      if (window.MLmarkDirty) { window.MLmarkDirty(); }
     }
   },
 
@@ -750,27 +716,19 @@ my_widget_script =
     if (!sel) { return; }
     var prev = sel.value;
     var html = '<' + 'option value="__all__">All mice (grouped)<' + '/option>';
-
-    // group filters (prefixed so we can tell them apart from mouse ids)
     var groups = this.mw_groupList();
     var g;
     for (g = 0; g < groups.length; g++) {
       html = html + '<' + 'option value="__grp__' + this.mw_esc(groups[g]) + '">Group: ' + this.mw_esc(groups[g]) + '<' + '/option>';
     }
-
-    // individual mice
     var i;
     for (i = 0; i < this.mw_mice.length; i++) {
       var m = this.mw_mice[i];
       html = html + '<' + 'option value="' + this.mw_esc(m.id) + '">' + this.mw_esc(m.id) + '<' + '/option>';
     }
     sel.innerHTML = html;
-
-    var found = false;
-    var o;
-    for (o = 0; o < sel.options.length; o++) {
-      if (sel.options[o].value === prev) { found = true; break; }
-    }
+    var found = false; var o;
+    for (o = 0; o < sel.options.length; o++) { if (sel.options[o].value === prev) { found = true; break; } }
     sel.value = found ? prev : '__all__';
   },
 
@@ -793,45 +751,37 @@ my_widget_script =
     var protocol = this.mw_esc(ev.protocol);
     if (!protocol) { protocol = '&mdash;'; }
 
-    // start with the common detail
     var dcell = details ? details : '';
-
-    // append this mouse's specific note, if any
     if (forMouseId && ev.perMouse && ev.perMouse[forMouseId]) {
       var note = this.mw_esc(ev.perMouse[forMouseId]);
-      if (dcell) {
-        dcell = dcell + '<' + 'br><' + 'span style="color:#1f5578;">&raquo; ' + note + '<' + '/span>';
-      } else {
-        dcell = '<' + 'span style="color:#1f5578;">&raquo; ' + note + '<' + '/span>';
-      }
+      dcell = dcell ? (dcell + '<' + 'br><' + 'span style="color:#1f5578;">&raquo; ' + note + '<' + '/span>')
+                    : ('<' + 'span style="color:#1f5578;">&raquo; ' + note + '<' + '/span>');
     }
     if (!dcell) { dcell = '&mdash;'; }
-    // build the meta line: age-at-event, experimenter, file location
+
     var meta = '';
     if (forMouseId) {
       var fm = this.mw_findMouse(forMouseId);
-      if (fm && fm.dob) {
-        var ageAt = this.mw_ageAt(fm.dob, ev.date);
-        if (ageAt) { meta = 'Age: ' + ageAt; }
-      }
+      if (fm && fm.dob) { var ageAt = this.mw_ageAt(fm.dob, ev.date); if (ageAt) { meta = 'Age: ' + ageAt; } }
     }
     if (ev.user) { if (meta) { meta = meta + ' | '; } meta = meta + 'By: ' + this.mw_esc(ev.user); }
-    if (ev.fileloc) {
-      if (meta) { meta = meta + ' | '; }
-      meta = meta + 'File: ' + this.mw_esc(ev.fileloc);
-    }
-    if (meta) {
-      dcell = dcell + '<' + 'br><' + 'span style="color:#6b7885;font-size:10px;">' + meta + '<' + '/span>';
-    }
+    if (ev.fileloc) { if (meta) { meta = meta + ' | '; } meta = meta + 'File: ' + this.mw_esc(ev.fileloc); }
+    if (meta) { dcell = dcell + '<' + 'br><' + 'span style="color:#6b7885;font-size:10px;">' + meta + '<' + '/span>'; }
 
-    // photo thumbnails (clickable)
+    // shared photos
     if (ev.photos && ev.photos.length) {
       dcell = dcell + '<' + 'div class="mw-logthumb">';
       var p;
-      for (p = 0; p < ev.photos.length; p++) {
-        dcell = dcell + '<' + 'img src="' + ev.photos[p] + '" class="mw-openphoto">';
-      }
-      dcell = dcell + '<' + '/div>';
+      for (p = 0; p < ev.photos.length; p++) { dcell = dcell + '<' + 'img src="' + ev.photos[p] + '" class="mw-openphoto">'; }
+      dcell = dcell + '<' + 'span class="mw-logthumb-lbl">shared photos<' + '/span><' + '/div>';
+    }
+    // per-mouse photos for THIS mouse
+    if (forMouseId && ev.perMousePhotos && ev.perMousePhotos[forMouseId] && ev.perMousePhotos[forMouseId].length) {
+      dcell = dcell + '<' + 'div class="mw-logthumb">';
+      var pmArr = ev.perMousePhotos[forMouseId];
+      var pp;
+      for (pp = 0; pp < pmArr.length; pp++) { dcell = dcell + '<' + 'img src="' + pmArr[pp] + '" class="mw-openphoto">'; }
+      dcell = dcell + '<' + 'span class="mw-logthumb-lbl">' + this.mw_esc(forMouseId) + ' photos<' + '/span><' + '/div>';
     }
 
     var typeCell = this.mw_esc(ev.type);
@@ -852,7 +802,6 @@ my_widget_script =
     return h;
   },
 
-  // render grouped-by-mouse blocks for a given list of mice
   mw_renderGroupedFor: function (miceArr) {
     var html = '';
     var i;
@@ -860,7 +809,7 @@ my_widget_script =
       var m = miceArr[i];
       var rows = this.mw_eventsForMouse(m.id);
       var isCollapsed = this.mw_collapsed[m.id] ? true : false;
-      var arrow = isCollapsed ? '&#9656;' : '&#9662;'; // right triangle / down triangle
+      var arrow = isCollapsed ? '&#9656;' : '&#9662;';
       var hdr = arrow + ' ' + this.mw_esc(m.id);
       if (m.eartag) { hdr = hdr + ' - tag ' + this.mw_esc(m.eartag); }
       if (m.group) { hdr = hdr + ' [' + this.mw_esc(m.group) + ']'; }
@@ -871,9 +820,7 @@ my_widget_script =
           html = html + '<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">no events<' + '/td><' + '/tr>';
         } else {
           var r;
-          for (r = 0; r < rows.length; r++) {
-            html = html + this.mw_rowHtml(rows[r].ev, rows[r].idx, false, m.id);
-          }
+          for (r = 0; r < rows.length; r++) { html = html + this.mw_rowHtml(rows[r].ev, rows[r].idx, false, m.id); }
         }
       }
     }
@@ -884,7 +831,6 @@ my_widget_script =
     var self = this;
     var body = document.getElementById('logbody');
     if (!body) { return; }
-
     var filter = '__all__';
     var fsel = document.getElementById('filtermouse');
     if (fsel) { filter = fsel.value; }
@@ -896,38 +842,25 @@ my_widget_script =
     }
 
     var html = '';
-
     if (filter === '__all__') {
-      // all mice, grouped by mouse
       html = this.mw_renderGroupedFor(this.mw_mice);
-
     } else if (filter.indexOf('__grp__') === 0) {
-      // one group: show its mice, each grouped by mouse
       var gname = filter.substring(7);
       var inGroup = [];
       var a;
-      for (a = 0; a < this.mw_mice.length; a++) {
-        if (this.mw_mice[a].group === gname) { inGroup.push(this.mw_mice[a]); }
-      }
-      if (inGroup.length === 0) {
-        html = '<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">No mice in group ' + this.mw_esc(gname) + '.<' + '/td><' + '/tr>';
-      } else {
-        html = this.mw_renderGroupedFor(inGroup);
-      }
-
+      for (a = 0; a < this.mw_mice.length; a++) { if (this.mw_mice[a].group === gname) { inGroup.push(this.mw_mice[a]); } }
+      html = inGroup.length === 0
+        ? ('<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">No mice in group ' + this.mw_esc(gname) + '.<' + '/td><' + '/tr>')
+        : this.mw_renderGroupedFor(inGroup);
     } else {
-      // single mouse
       var single = this.mw_eventsForMouse(filter);
       if (single.length === 0) {
         html = '<' + 'tr><' + 'td colspan="5" style="color:#6b7885;font-style:italic;">No events for ' + this.mw_esc(filter) + '.<' + '/td><' + '/tr>';
       } else {
         var s;
-        for (s = 0; s < single.length; s++) {
-          html = html + this.mw_rowHtml(single[s].ev, single[s].idx, false, filter);
-        }
+        for (s = 0; s < single.length; s++) { html = html + this.mw_rowHtml(single[s].ev, single[s].idx, false, filter); }
       }
     }
-
     body.innerHTML = html;
     this.mw_wireLogDeletes();
   },
@@ -936,58 +869,34 @@ my_widget_script =
     var self = this;
     var edits = document.querySelectorAll('.mw-editevent');
     var q;
-    for (q = 0; q < edits.length; q++) {
-      edits[q].addEventListener('click', function () {
-        self.mw_editEvent(parseInt(this.getAttribute('data-i'), 10));
-      });
-    }
+    for (q = 0; q < edits.length; q++) { edits[q].addEventListener('click', function () { self.mw_editEvent(parseInt(this.getAttribute('data-i'), 10)); }); }
     var dups = document.querySelectorAll('.mw-dupevent');
     var d;
-    for (d = 0; d < dups.length; d++) {
-      dups[d].addEventListener('click', function () {
-        self.mw_duplicateEvent(parseInt(this.getAttribute('data-i'), 10));
-      });
-    }
+    for (d = 0; d < dups.length; d++) { dups[d].addEventListener('click', function () { self.mw_duplicateEvent(parseInt(this.getAttribute('data-i'), 10)); }); }
     var dels = document.querySelectorAll('.mw-delevent');
     var j;
-    for (j = 0; j < dels.length; j++) {
-      dels[j].addEventListener('click', function () {
-        self.mw_removeEvent(parseInt(this.getAttribute('data-i'), 10));
-      });
-    }
+    for (j = 0; j < dels.length; j++) { dels[j].addEventListener('click', function () { self.mw_removeEvent(parseInt(this.getAttribute('data-i'), 10)); }); }
     var ph = document.querySelectorAll('.mw-openphoto');
     var k;
-    for (k = 0; k < ph.length; k++) {
-      ph[k].addEventListener('click', function () {
-        self.mw_openPhoto(this.getAttribute('src'));
-      });
-    }
+    for (k = 0; k < ph.length; k++) { ph[k].addEventListener('click', function () { self.mw_openPhoto(this.getAttribute('src')); }); }
     var tg = document.querySelectorAll('.mw-toggle');
     var t;
     for (t = 0; t < tg.length; t++) {
       tg[t].addEventListener('click', function () {
         var id = this.getAttribute('data-id');
-        if (self.mw_collapsed[id]) { delete self.mw_collapsed[id]; }
-        else { self.mw_collapsed[id] = true; }
+        if (self.mw_collapsed[id]) { delete self.mw_collapsed[id]; } else { self.mw_collapsed[id] = true; }
         self.mw_renderLog();
       });
     }
   },
 
   mw_collapseAll: function (on) {
-    if (on) {
-      var i;
-      for (i = 0; i < this.mw_mice.length; i++) { this.mw_collapsed[this.mw_mice[i].id] = true; }
-    } else {
-      this.mw_collapsed = {};
-    }
+    if (on) { var i; for (i = 0; i < this.mw_mice.length; i++) { this.mw_collapsed[this.mw_mice[i].id] = true; } }
+    else { this.mw_collapsed = {}; }
     this.mw_renderLog();
   },
 
-  mw_toggleRoster: function () {
-    this.mw_rosterCollapsed = !this.mw_rosterCollapsed;
-    this.mw_applyRosterCollapse();
-  },
+  mw_toggleRoster: function () { this.mw_rosterCollapsed = !this.mw_rosterCollapsed; this.mw_applyRosterCollapse(); },
 
   mw_applyRosterCollapse: function () {
     var tbl = document.getElementById('rostertable');
@@ -995,31 +904,23 @@ my_widget_script =
     var count = document.getElementById('rostercount');
     if (tbl) { tbl.style.display = this.mw_rosterCollapsed ? 'none' : ''; }
     if (arrow) { arrow.innerHTML = this.mw_rosterCollapsed ? '&#9656;' : '&#9662;'; }
-    if (count) {
-      var nm = this.mw_mice.length;
-      count.textContent = '(' + nm + ' ' + (nm === 1 ? 'mouse' : 'mice') + ')';
-    }
+    if (count) { var nm = this.mw_mice.length; count.textContent = '(' + nm + ' ' + (nm === 1 ? 'mouse' : 'mice') + ')'; }
   },
 
-  // ================= CSV export (one row per mouse) =================
-  mw_csvCell: function (v) {
-    v = (v === null || v === undefined) ? '' : String(v);
-    return '"' + v.split('"').join('""') + '"';
-  },
+  // ================= CSV export (one row per mouse per event) =================
+  mw_csvCell: function (v) { v = (v === null || v === undefined) ? '' : String(v); return '"' + v.split('"').join('""') + '"'; },
 
   mw_buildCsv: function () {
     var rows = [];
     var header = ['Mouse ID', 'Ear Tag', 'Sex', 'Cage', 'Group', 'DOB', 'Age', 'Genotype', 'Strain',
                   'Event Date', 'Age at Event', 'Event Type', 'Experimenter', 'File Location', 'Protocol', 'Details', 'Mouse Note'];
     rows.push(header);
-
     var i;
     for (i = 0; i < this.mw_mice.length; i++) {
       var m = this.mw_mice[i];
       var evs = this.mw_eventsForMouse(m.id);
       if (evs.length === 0) {
-        rows.push([m.id, m.eartag, m.sex, m.cage, m.group || '', m.dob, this.mw_ageStr(m.dob), m.genotype, m.strain,
-                   '', '', '', '', '', '', '', '']);
+        rows.push([m.id, m.eartag, m.sex, m.cage, m.group || '', m.dob, this.mw_ageStr(m.dob), m.genotype, m.strain, '', '', '', '', '', '', '', '']);
       } else {
         var r;
         for (r = 0; r < evs.length; r++) {
@@ -1030,7 +931,6 @@ my_widget_script =
         }
       }
     }
-
     var out = '';
     var a;
     for (a = 0; a < rows.length; a++) {
@@ -1055,54 +955,34 @@ my_widget_script =
   mw_copyExport: function () {
     var box = document.getElementById('exportbox');
     if (!box) { return; }
-    box.focus();
-    box.select();
+    box.focus(); box.select();
     var ok = false;
     try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
     this.mw_msg('exportmsg', ok ? 'Copied to clipboard.' : 'Press Ctrl/Cmd+C to copy.', !ok);
   },
 
   mw_downloadExport: function () {
-    // Best-effort; sandbox may block. Falls back to the copy box message.
     var csv = this.mw_buildCsv();
     try {
       var blob = new Blob([csv], { type: 'text/csv' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
-      a.href = url;
-      a.download = 'mouse_colony_export.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      a.href = url; a.download = 'mouse_colony_export.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
       this.mw_msg('exportmsg', 'Download started (if allowed).', false);
-    } catch (err) {
-      this.mw_msg('exportmsg', 'Download blocked here - use Copy instead.', true);
-    }
+    } catch (err) { this.mw_msg('exportmsg', 'Download blocked here - use Copy instead.', true); }
   },
 
   // ================= CSV import / merge =================
-  // Detect the delimiter of a line: tab (from Excel/Sheets copy) or comma.
-  mw_detectDelim: function (line) {
-    var tabs = line.split('\t').length - 1;
-    var commas = line.split(',').length - 1;
-    return (tabs >= commas && tabs > 0) ? '\t' : ',';
-  },
+  mw_detectDelim: function (line) { var tabs = line.split('\t').length - 1; var commas = line.split(',').length - 1; return (tabs >= commas && tabs > 0) ? '\t' : ','; },
 
-  // Parse one delimited line, honoring quoted fields and "" escapes.
   mw_parseLine: function (line, delim) {
-    var out = [];
-    var field = '';
-    var inQ = false;
-    var i, c, next;
+    var out = []; var field = ''; var inQ = false; var i, c, next;
     for (i = 0; i < line.length; i++) {
       c = line.charAt(i);
       if (inQ) {
-        if (c === '"') {
-          next = line.charAt(i + 1);
-          if (next === '"') { field = field + '"'; i++; }
-          else { inQ = false; }
-        } else { field = field + c; }
+        if (c === '"') { next = line.charAt(i + 1); if (next === '"') { field = field + '"'; i++; } else { inQ = false; } }
+        else { field = field + c; }
       } else {
         if (c === '"') { inQ = true; }
         else if (c === delim) { out.push(field); field = ''; }
@@ -1113,14 +993,10 @@ my_widget_script =
     return out;
   },
 
-  // Parse full text into array of row-arrays. Delimiter detected from the
-  // header (first non-empty) line, so tab- and comma-separated both work.
   mw_parseCsv: function (text) {
     text = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     var lines = text.split('\n');
-    var rows = [];
-    var delim = null;
-    var i;
+    var rows = []; var delim = null; var i;
     for (i = 0; i < lines.length; i++) {
       if (this.mw_trim(lines[i]) === '') { continue; }
       if (delim === null) { delim = this.mw_detectDelim(lines[i]); }
@@ -1129,99 +1005,51 @@ my_widget_script =
     return rows;
   },
 
-  mw_getRadio: function (name) {
-    var els = document.querySelectorAll('input[name="' + name + '"]');
-    var i;
-    for (i = 0; i < els.length; i++) { if (els[i].checked) { return els[i].value; } }
-    return '';
-  },
+  mw_getRadio: function (name) { var els = document.querySelectorAll('input[name="' + name + '"]'); var i; for (i = 0; i < els.length; i++) { if (els[i].checked) { return els[i].value; } } return ''; },
 
-  mw_sameEvent: function (a, b) {
-    return a.date === b.date && a.type === b.type;
-  },
+  mw_sameEvent: function (a, b) { return a.date === b.date && a.type === b.type; },
 
-  // Normalize a header cell for matching: lowercase, strip non-alphanumerics.
-  mw_normHdr: function (s) {
-    return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  },
+  mw_normHdr: function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); },
 
-  // Build a name->index map from the header row using known aliases.
   mw_mapHeaders: function (headerRow) {
     var aliases = {
-      id: ['mouseid', 'id', 'mouse'],
-      eartag: ['eartag', 'tag'],
-      sex: ['sex'],
-      cage: ['cage', 'cagenumber'],
-      group: ['group', 'batch', 'groupbatch'],
-      dob: ['dob', 'dateofbirth', 'birth'],
-      genotype: ['genotype'],
-      strain: ['strain', 'background', 'strainbackground'],
-      edate: ['eventdate', 'date'],
-      etype: ['eventtype', 'type', 'event'],
-      user: ['experimenter', 'user', 'operator'],
-      fileloc: ['filelocation', 'fileloc', 'filestoragelocation', 'file'],
-      protocol: ['protocol', 'iacuc', 'protocoliacuc'],
-      details: ['details', 'commondetails', 'notes'],
-      note: ['mousenote', 'note', 'permousenote', 'permousedetails']
+      id: ['mouseid', 'id', 'mouse'], eartag: ['eartag', 'tag'], sex: ['sex'], cage: ['cage', 'cagenumber'],
+      group: ['group', 'batch', 'groupbatch'], dob: ['dob', 'dateofbirth', 'birth'], genotype: ['genotype'],
+      strain: ['strain', 'background', 'strainbackground'], edate: ['eventdate', 'date'], etype: ['eventtype', 'type', 'event'],
+      user: ['experimenter', 'user', 'operator'], fileloc: ['filelocation', 'fileloc', 'filestoragelocation', 'file'],
+      protocol: ['protocol', 'iacuc', 'protocoliacuc'], details: ['details', 'commondetails', 'notes'], note: ['mousenote', 'note', 'permousenote', 'permousedetails']
     };
-    var map = {};
-    var norm = [];
-    var i;
+    var map = {}; var norm = []; var i;
     for (i = 0; i < headerRow.length; i++) { norm.push(this.mw_normHdr(headerRow[i])); }
-
     var key, j, k;
     for (key in aliases) {
       if (!aliases.hasOwnProperty(key)) { continue; }
       map[key] = -1;
       for (j = 0; j < aliases[key].length && map[key] === -1; j++) {
-        for (k = 0; k < norm.length; k++) {
-          if (norm[k] === aliases[key][j]) { map[key] = k; break; }
-        }
+        for (k = 0; k < norm.length; k++) { if (norm[k] === aliases[key][j]) { map[key] = k; break; } }
       }
     }
     return map;
   },
 
-  // Safe cell fetch by mapped index.
-  mw_cell: function (row, idx) {
-    if (idx < 0 || idx >= row.length) { return ''; }
-    return this.mw_trim(row[idx] || '');
-  },
+  mw_cell: function (row, idx) { if (idx < 0 || idx >= row.length) { return ''; } return this.mw_trim(row[idx] || ''); },
 
   mw_importCsv: function () {
     var raw = document.getElementById('importbox').value;
     if (!this.mw_trim(raw)) { this.mw_msg('importmsg', 'Paste CSV or Excel rows first.', true); return; }
-
-    var dupMouse = this.mw_getRadio('dupmouse');   // skip | overwrite
-    var dupEvent = this.mw_getRadio('dupevent');   // keep | overwrite
-
+    var dupMouse = this.mw_getRadio('dupmouse');
+    var dupEvent = this.mw_getRadio('dupevent');
     var rows = this.mw_parseCsv(raw);
     if (rows.length < 1) { this.mw_msg('importmsg', 'No rows found.', true); return; }
 
-    // Decide whether row 0 is a header. If it contains a recognizable
-    // "mouse id" style column, treat it as a header and map by name.
     var map = this.mw_mapHeaders(rows[0]);
     var hasHeader = (map.id >= 0 || map.edate >= 0 || map.etype >= 0);
     var start = 0;
+    if (hasHeader) { start = 1; }
+    else { map = { id:0,eartag:1,sex:2,cage:3,group:4,dob:5,genotype:7,strain:8,edate:9,etype:10,user:11,fileloc:12,protocol:13,details:14,note:15 }; }
+    if (map.id < 0) { this.mw_msg('importmsg', 'Could not find a "Mouse ID" column. Check the header row.', true); return; }
 
-    if (hasHeader) {
-      start = 1;
-    } else {
-      // No header: fall back to the known export column order.
-      map = { id:0, eartag:1, sex:2, cage:3, group:4, dob:5, genotype:7, strain:8,
-              edate:9, etype:10, user:11, fileloc:12, protocol:13, details:14, note:15 };
-    }
-
-    if (map.id < 0) {
-      this.mw_msg('importmsg', 'Could not find a "Mouse ID" column. Check the header row.', true);
-      return;
-    }
-
-    var added = { mice: 0, events: 0 };
-    var updated = { mice: 0, events: 0 };
-    var skipped = { mice: 0, events: 0 };
-    var badrows = 0;
-
+    var added = { mice: 0, events: 0 }, updated = { mice: 0, events: 0 }, skipped = { mice: 0, events: 0 }, badrows = 0;
     var r;
     for (r = start; r < rows.length; r++) {
       var col = rows[r];
@@ -1229,53 +1057,27 @@ my_widget_script =
       var id = this.mw_cell(col, map.id);
       if (!id) { badrows++; continue; }
 
-      // ---- mouse ----
       var incoming = {
-        id: id,
-        eartag: this.mw_cell(col, map.eartag),
-        sex: this.mw_cell(col, map.sex),
-        cage: this.mw_cell(col, map.cage),
-        group: this.mw_cell(col, map.group),
-        dob: this.mw_cell(col, map.dob),
-        strain: this.mw_cell(col, map.strain),
-        genotype: this.mw_cell(col, map.genotype)
+        id: id, eartag: this.mw_cell(col, map.eartag), sex: this.mw_cell(col, map.sex), cage: this.mw_cell(col, map.cage),
+        group: this.mw_cell(col, map.group), dob: this.mw_cell(col, map.dob), strain: this.mw_cell(col, map.strain), genotype: this.mw_cell(col, map.genotype)
       };
       var existing = this.mw_findMouse(id);
-      if (!existing) {
-        this.mw_mice.push(incoming);
-        added.mice++;
-        existing = incoming;
-      } else if (dupMouse === 'overwrite') {
-        existing.eartag = incoming.eartag;
-        existing.sex = incoming.sex;
-        existing.cage = incoming.cage;
-        existing.group = incoming.group;
-        existing.dob = incoming.dob;
-        existing.strain = incoming.strain;
-        existing.genotype = incoming.genotype;
-        updated.mice++;
-      } else {
-        skipped.mice++;
-      }
+      if (!existing) { this.mw_mice.push(incoming); added.mice++; existing = incoming; }
+      else if (dupMouse === 'overwrite') {
+        existing.eartag = incoming.eartag; existing.sex = incoming.sex; existing.cage = incoming.cage; existing.group = incoming.group;
+        existing.dob = incoming.dob; existing.strain = incoming.strain; existing.genotype = incoming.genotype; updated.mice++;
+      } else { skipped.mice++; }
 
-      // ---- event (only if the row carries event data) ----
       var edate = this.mw_cell(col, map.edate);
       var etype = this.mw_cell(col, map.etype);
       if (edate || etype) {
         var incNote = this.mw_cell(col, map.note);
         var incEv = {
-          date: edate,
-          type: etype,
-          user: this.mw_cell(col, map.user),
-          fileloc: this.mw_cell(col, map.fileloc),
-          protocol: this.mw_cell(col, map.protocol),
-          details: this.mw_cell(col, map.details),
-          photos: [],
-          perMouse: {},
-          mice: [id]
+          date: edate, type: etype, user: this.mw_cell(col, map.user), fileloc: this.mw_cell(col, map.fileloc),
+          protocol: this.mw_cell(col, map.protocol), details: this.mw_cell(col, map.details),
+          photos: [], perMouse: {}, perMousePhotos: {}, mice: [id]
         };
         if (incNote) { incEv.perMouse[id] = incNote; }
-
         var match = null;
         var e;
         for (e = 0; e < this.mw_events.length; e++) {
@@ -1285,44 +1087,32 @@ my_widget_script =
           for (z = 0; z < ex.mice.length; z++) { if (ex.mice[z] === id) { belongs = true; break; } }
           if (belongs && this.mw_sameEvent(ex, incEv)) { match = ex; break; }
         }
-        if (!match) {
-          this.mw_events.push(incEv);
-          added.events++;
-        } else if (dupEvent === 'overwrite') {
-          match.user = incEv.user;
-          match.fileloc = incEv.fileloc;
-          match.protocol = incEv.protocol;
-          match.details = incEv.details;
+        if (!match) { this.mw_events.push(incEv); added.events++; }
+        else if (dupEvent === 'overwrite') {
+          match.user = incEv.user; match.fileloc = incEv.fileloc; match.protocol = incEv.protocol; match.details = incEv.details;
           if (!match.perMouse) { match.perMouse = {}; }
           if (incNote) { match.perMouse[id] = incNote; }
           updated.events++;
-        } else {
-          skipped.events++;
-        }
+        } else { skipped.events++; }
       }
     }
 
+    this.mw_sortEvents();
     this.mw_renderAll();
-    var summary = 'Mice +' + added.mice + ' / upd ' + updated.mice + ' / skip ' + skipped.mice +
-                  '  |  Events +' + added.events + ' / upd ' + updated.events + ' / skip ' + skipped.events;
+    var summary = 'Mice +' + added.mice + ' / upd ' + updated.mice + ' / skip ' + skipped.mice + '  |  Events +' + added.events + ' / upd ' + updated.events + ' / skip ' + skipped.events;
     if (badrows > 0) { summary = summary + '  (' + badrows + ' row(s) had no Mouse ID)'; }
     this.mw_msg('importmsg', summary, false);
+    if (window.MLmarkDirty) { window.MLmarkDirty(); }
   },
 
-  mw_clearImport: function () {
-    document.getElementById('importbox').value = '';
-    this.mw_msg('importmsg', '', false);
-  },
+  mw_clearImport: function () { document.getElementById('importbox').value = ''; this.mw_msg('importmsg', '', false); },
 
   // ================= wiring =================
   mw_wire: function () {
     var self = this;
     function bind(id, fn) {
       var el = document.getElementById(id);
-      if (el && !el.getAttribute('data-mw')) {
-        el.setAttribute('data-mw', '1');
-        el.addEventListener('click', fn);
-      }
+      if (el && !el.getAttribute('data-mw')) { el.setAttribute('data-mw', '1'); el.addEventListener('click', fn); }
     }
     bind('addmousebtn', function () { self.mw_addMouse(); });
     bind('clearmousebtn', function () { self.mw_clearMouse(); });
@@ -1341,33 +1131,23 @@ my_widget_script =
     bind('rosterhdr', function () { self.mw_toggleRoster(); });
 
     var fsel = document.getElementById('filtermouse');
-    if (fsel && !fsel.getAttribute('data-mw')) {
-      fsel.setAttribute('data-mw', '1');
-      fsel.addEventListener('change', function () { self.mw_renderLog(); });
-    }
+    if (fsel && !fsel.getAttribute('data-mw')) { fsel.setAttribute('data-mw', '1'); fsel.addEventListener('change', function () { self.mw_renderLog(); }); }
 
     var ssel = document.getElementById('sortorder');
-    if (ssel && !ssel.getAttribute('data-mw')) {
-      ssel.setAttribute('data-mw', '1');
-      ssel.addEventListener('change', function () { self.mw_sortEvents(); self.mw_renderLog(); });
-    }
+    if (ssel && !ssel.getAttribute('data-mw')) { ssel.setAttribute('data-mw', '1'); ssel.addEventListener('change', function () { self.mw_sortEvents(); self.mw_renderLog(); }); }
 
     var ed = document.getElementById('e_date');
     if (ed && !ed.value) { ed.value = this.mw_today(); }
 
     var pin = document.getElementById('e_photos');
-    if (pin && !pin.getAttribute('data-mw')) {
-      pin.setAttribute('data-mw', '1');
-      pin.addEventListener('change', function () { self.mw_handlePhotoInput(this.files); });
-    }
+    if (pin && !pin.getAttribute('data-mw')) { pin.setAttribute('data-mw', '1'); pin.addEventListener('change', function () { self.mw_handlePhotoInput(this.files); }); }
 
-    // Genotype dropdown auto-fills the text field (the source of truth).
     var gsel = document.getElementById('m_genotype');
     if (gsel && !gsel.getAttribute('data-mw')) {
       gsel.setAttribute('data-mw', '1');
       gsel.addEventListener('change', function () {
         var v = this.value;
-        if (v === '' || v === 'other') { return; } // blank/Other: leave text as-is
+        if (v === '' || v === 'other') { return; }
         var txt = this.options[this.selectedIndex].text;
         document.getElementById('m_genotypeother').value = txt;
       });
@@ -1375,16 +1155,12 @@ my_widget_script =
   },
 
   mw_renderAll: function () {
-    this.mw_renderRoster();
-    this.mw_renderMiceChecks();
-    this.mw_renderGroupControls();
-    this.mw_renderFilter();
-    this.mw_renderLog();
+    this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls();
+    this.mw_renderFilter(); this.mw_renderLog();
   },
 
   mw_load: function (json_data) {
-    this.mw_mice = [];
-    this.mw_events = [];
+    this.mw_mice = []; this.mw_events = [];
     var title = '';
     try {
       var d = json_data;
@@ -1394,22 +1170,24 @@ my_widget_script =
         if (d.mw_events) { this.mw_events = d.mw_events; }
         if (d.mw_title) { title = d.mw_title; }
       }
-    } catch (err) {
-      this.mw_mice = [];
-      this.mw_events = [];
-    }
+    } catch (err) { this.mw_mice = []; this.mw_events = []; }
     if (!this.mw_mice) { this.mw_mice = []; }
     if (!this.mw_events) { this.mw_events = []; }
+    // ensure per-mouse photo maps exist on loaded events (older data)
+    var i;
+    for (i = 0; i < this.mw_events.length; i++) {
+      if (!this.mw_events[i].perMousePhotos) { this.mw_events[i].perMousePhotos = {}; }
+      if (!this.mw_events[i].perMouse) { this.mw_events[i].perMouse = {}; }
+      if (!this.mw_events[i].photos) { this.mw_events[i].photos = []; }
+    }
     var tEl = document.getElementById('projecttitle');
     if (tEl) { tEl.value = title; }
   },
 
   // ================= default methods =================
   init: function (mode, json_data) {
-    this.parent_class.init(mode, json_data, this);
-    this.mw_load(json_data);
-    this.mw_wire();
-    this.mw_renderAll();
+    if (this.parent_class) { this.parent_class.init(mode, json_data, this); }
+    this.mw_load(json_data); this.mw_wire(); this.mw_renderAll();
   },
 
   to_json: function () {
@@ -1422,25 +1200,12 @@ my_widget_script =
   },
 
   from_json: function (json_data) {
-    this.parent_class.from_json(json_data);
-    this.mw_load(json_data);
-    this.mw_wire();
-    this.mw_renderAll();
+    if (this.parent_class) { this.parent_class.from_json(json_data); }
+    this.mw_load(json_data); this.mw_wire(); this.mw_renderAll();
   },
 
-  test_data: function () {
-    return JSON.stringify({ mw_mice: [], mw_events: [] });
-  },
-
-  is_valid: function (b_suppress_message) {
-    return this.parent_class.is_valid(b_suppress_message);
-  },
-
-  is_edited: function () {
-    return this.parent_class.is_edited();
-  },
-
-  reset_edited: function () {
-    return this.parent_class.reset_edited();
-  }
+  test_data: function () { return JSON.stringify({ mw_mice: [], mw_events: [] }); },
+  is_valid: function (b) { return this.parent_class ? this.parent_class.is_valid(b) : true; },
+  is_edited: function () { return this.parent_class ? this.parent_class.is_edited() : false; },
+  reset_edited: function () { return this.parent_class ? this.parent_class.reset_edited() : true; }
 }
