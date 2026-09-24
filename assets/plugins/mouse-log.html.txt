@@ -103,7 +103,7 @@
         <option value="other">Other</option>
       </select>
     </div>
-    <div class="mw-field"><label>Genotype (if Other)</label><input type="text" name="m_genotypeother" id="m_genotypeother" placeholder="specify"></div>
+    <div class="mw-field"><label>Genotype (final value — edit if needed)</label><input type="text" name="m_genotypeother" id="m_genotypeother" placeholder="auto-fills from dropdown; overwrite here"></div>
   </div>
   <div class="mw-bar">
     <button type="button" class="mw-btn" id="addmousebtn">Add Mouse</button>

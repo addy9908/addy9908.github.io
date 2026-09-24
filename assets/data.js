@@ -45,9 +45,14 @@ const DOCS = [
 	docPage: "projects/fst-fp-sync.html"
 	},
   {
-  repo: "labarchives-plugin",
+  repo: "labarchives-widget",
   title: "Mouse Lifespan Event Log",
   docPage: "projects/labarchives-plugin.html"
+    },
+  {
+  repo: "Mouse Lifespan Event Logger - Standalone",
+  title: "Mouse Lifespan Event Logger",
+  docPage: "projects/Mouse_Lifespan_Event_Logger.html"
     }
 ];
 

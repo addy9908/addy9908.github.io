@@ -114,10 +114,9 @@ my_widget_script =
 
   // ================= add / update / remove mouse =================
   mw_readMouseForm: function () {
-    var geno = this.mw_selText('m_genotype');
-    var genoOther = this.mw_trim(document.getElementById('m_genotypeother').value);
-    if (document.getElementById('m_genotype').value === 'other' && genoOther) { geno = genoOther; }
-
+    // Genotype: the text field is the single source of truth. The dropdown
+    // only auto-fills it. This keeps records valid even if the dropdown
+    // options change later.
     var m = {};
     m.id = this.mw_trim(document.getElementById('m_id').value);
     m.eartag = this.mw_trim(document.getElementById('m_eartag').value);
@@ -126,7 +125,7 @@ my_widget_script =
     m.group = this.mw_trim(document.getElementById('m_group').value);
     m.dob = this.mw_trim(document.getElementById('m_dob').value);
     m.strain = this.mw_trim(document.getElementById('m_strain').value);
-    m.genotype = (geno === '-- select --') ? '' : geno;
+    m.genotype = this.mw_trim(document.getElementById('m_genotypeother').value);
     return m;
   },
 
@@ -200,19 +199,14 @@ my_widget_script =
     document.getElementById('m_dob').value = m.dob;
     document.getElementById('m_strain').value = m.strain;
 
-    // genotype: match to a preset value, else use Other + free text
+    // genotype: text field is the source of truth; set dropdown to match
+    // if an option equals the stored value, else leave dropdown on Other.
+    document.getElementById('m_genotypeother').value = m.genotype || '';
     var gsel = document.getElementById('m_genotype');
     var matched = this.mw_valueForText('m_genotype', m.genotype);
-    if (matched) {
-      gsel.value = matched;
-      document.getElementById('m_genotypeother').value = '';
-    } else if (m.genotype) {
-      gsel.value = 'other';
-      document.getElementById('m_genotypeother').value = m.genotype;
-    } else {
-      gsel.value = '';
-      document.getElementById('m_genotypeother').value = '';
-    }
+    if (matched) { gsel.value = matched; }
+    else if (m.genotype) { gsel.value = 'other'; }
+    else { gsel.value = ''; }
 
     this.mw_editId = mid;
     var btn = document.getElementById('addmousebtn');
@@ -1365,6 +1359,18 @@ my_widget_script =
     if (pin && !pin.getAttribute('data-mw')) {
       pin.setAttribute('data-mw', '1');
       pin.addEventListener('change', function () { self.mw_handlePhotoInput(this.files); });
+    }
+
+    // Genotype dropdown auto-fills the text field (the source of truth).
+    var gsel = document.getElementById('m_genotype');
+    if (gsel && !gsel.getAttribute('data-mw')) {
+      gsel.setAttribute('data-mw', '1');
+      gsel.addEventListener('change', function () {
+        var v = this.value;
+        if (v === '' || v === 'other') { return; } // blank/Other: leave text as-is
+        var txt = this.options[this.selectedIndex].text;
+        document.getElementById('m_genotypeother').value = txt;
+      });
     }
   },
 

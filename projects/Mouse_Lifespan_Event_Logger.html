@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mouse Logger">
+<title>Mouse Lifespan Event Logger - Zengyou Ye</title>
+<style>
+  /* ---------- shell / project bar (NOT part of the widget) ---------- */
+  body { margin:0; font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; color:#23303c; background:#f4f6f9; }
+  .shell { max-width:980px; margin:0 auto; padding:14px; }
+  .panel { background:#fff; border:1px solid #d9dee6; border-radius:10px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(16,24,40,.06); }
+  .panel h2 { margin:0 0 10px; font-size:15px; color:#1f5578; }
+  .prow { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .pfield { display:flex; flex-direction:column; gap:3px; }
+  .pfield label { font-size:11px; font-weight:bold; color:#6b7885; }
+  .pfield input, .pfield select { font-size:14px; padding:8px 10px; border:1px solid #d9dee6; border-radius:6px; min-width:180px; }
+  .pbtn { font-size:13px; font-weight:bold; padding:9px 15px; border:none; border-radius:6px; background:#2c6e9c; color:#fff; cursor:pointer; }
+  .pbtn.sec { background:#eef2f6; color:#1f5578; border:1px solid #d9dee6; }
+  .pbtn:disabled { opacity:.5; cursor:not-allowed; }
+  .pmsg { font-size:12px; font-weight:bold; margin-left:4px; }
+  .pnote { font-size:11px; color:#6b7885; margin-top:8px; line-height:1.5; }
+  .badge { display:inline-block; font-size:11px; padding:3px 9px; border-radius:999px; margin-left:6px; }
+  .badge.on { background:#e5f5ec; color:#1e7a48; }
+  .badge.off { background:#fdecec; color:#b23b3b; }
+  .dirty { color:#b26a00; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ===================== PROJECT / STORAGE BAR ===================== -->
+  <div class="panel">
+    <h2>Storage &amp; Projects <span id="modebadge" class="badge off">detecting…</span></h2>
+
+    <div class="prow">
+      <div class="pfield">
+        <label>Output location</label>
+        <input type="text" id="outpath" readonly placeholder="(no folder selected)">
+      </div>
+      <button class="pbtn" id="chooseDirBtn">Choose Folder…</button>
+    </div>
+
+    <div class="prow" style="margin-top:12px;">
+      <div class="pfield">
+        <label>New / current project name</label>
+        <input type="text" id="projname" placeholder="e.g. mini2P-orexin">
+      </div>
+      <button class="pbtn" id="createBtn">Create</button>
+      <div class="pfield">
+        <label>Load existing project</label>
+        <select id="projlist"><option value="">(choose folder first)</option></select>
+      </div>
+      <button class="pbtn sec" id="loadBtn">Load</button>
+    </div>
+
+    <div class="prow" style="margin-top:12px;">
+      <button class="pbtn" id="saveBtn">Save</button>
+      <button class="pbtn sec" id="saveAsBtn">Save As…</button>
+      <span class="pmsg" id="projmsg"></span>
+      <span class="pnote" id="dirtynote"></span>
+    </div>
+
+    <div class="pnote" id="modenote"></div>
+  </div>
+
+  <!-- ===================== LOGGER WIDGET ===================== -->
+  <div class="panel">
+    <!-- ============================================================ -->
+    <!-- LOGGER HTML — BEGIN.  To update the widget, replace everything -->
+    <!-- between "LOGGER HTML — BEGIN" and "LOGGER HTML — END" with the -->
+    <!-- new mouse-log.html.txt contents.                              -->
+    <!-- ============================================================ -->
+<style>
+  .mw-wrap { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color:#23303c; max-width:940px; }
+  .mw-wrap h3 { font-size:14px; color:#1f5578; border-bottom:1px solid #d9dee6; padding-bottom:5px; margin:14px 0 10px; text-transform:uppercase; letter-spacing:.03em; }
+  .mw-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .mw-field { display:flex; flex-direction:column; margin-bottom:6px; }
+  .mw-field.mw-span2 { grid-column:span 2; }
+  .mw-field.mw-span3 { grid-column:1 / -1; }
+  .mw-field label { font-size:11px; font-weight:bold; color:#6b7885; margin-bottom:3px; }
+  .mw-wrap input, .mw-wrap select, .mw-wrap textarea {
+    font-size:13px; padding:6px 8px; border:1px solid #d9dee6; border-radius:4px; width:100%; font-family:inherit;
+  }
+  .mw-wrap textarea { min-height:40px; resize:vertical; }
+  .mw-btn { font-size:12px; font-weight:bold; padding:7px 13px; border:none; border-radius:4px; background:#2c6e9c; color:#fff; cursor:pointer; }
+  .mw-btn.sec { background:#eef2f6; color:#1f5578; border:1px solid #d9dee6; }
+  .mw-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+  .mw-table th, .mw-table td { border:1px solid #d9dee6; padding:6px 8px; text-align:left; vertical-align:top; }
+  .mw-table th { background:#f4f6f9; color:#6b7885; font-size:11px; text-transform:uppercase; }
+  .mw-note { font-size:11px; color:#6b7885; margin-top:4px; }
+  .mw-msg { font-size:12px; font-weight:bold; margin-left:8px; }
+  .mw-checks { border:1px solid #d9dee6; border-radius:4px; padding:6px 8px; max-height:120px; overflow:auto; background:#fff; }
+  .mw-checks label { display:block; font-size:12px; font-weight:normal; color:#23303c; margin:2px 0; }
+  .mw-checks input { width:auto; margin-right:6px; }
+  .mw-grouphdr { background:#eef2f6; font-weight:bold; color:#1f5578; }
+  .mw-bar { margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .mw-thumb { position:relative; display:inline-block; }
+  .mw-thumb img { width:56px; height:56px; object-fit:cover; border:1px solid #d9dee6; border-radius:4px; cursor:pointer; display:block; }
+  .mw-thumb .mw-thumbx { position:absolute; top:-6px; right:-6px; background:#c0392b; color:#fff; border:none; border-radius:50%; width:16px; height:16px; font-size:10px; line-height:14px; cursor:pointer; padding:0; }
+  .mw-logthumb img { width:44px; height:44px; object-fit:cover; border:1px solid #d9dee6; border-radius:3px; cursor:pointer; margin:2px 2px 0 0; }
+  .mw-pmrow { display:flex; align-items:center; gap:8px; margin:3px 0; }
+  .mw-pmrow .mw-pmlabel { font-size:11px; font-weight:bold; color:#1f5578; min-width:120px; }
+  .mw-pmrow input { flex:1; }
+  .mw-band {
+    margin:22px 0 12px; padding:12px 16px;
+    background:linear-gradient(135deg,#1f5578,#2c6e9c);
+    color:#ffffff !important; border-radius:6px; font-size:15px; font-weight:bold;
+    letter-spacing:.08em; text-transform:uppercase; display:flex; align-items:center; gap:10px;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+  }
+  .mw-band, .mw-band span, .mw-band .mw-band-ico, .mw-band .mw-band-sub { color:#ffffff !important; }
+  .mw-band .mw-band-ico { font-size:18px; line-height:1; }
+  .mw-band .mw-band-sub { font-size:11px; font-weight:normal; letter-spacing:.02em; text-transform:none; opacity:.9; margin-left:auto; }
+  #m_dob, #e_date, #m_dob + img, #e_date + img, .mw-field img { background-image:none !important; }
+  .mw-field img { display:none !important; }
+</style>
+
+<div class="mw-wrap">
+  <div class="mw-field mw-span3" style="margin-bottom:10px;">
+    <label>Project Title</label>
+    <input type="text" name="projecttitle" id="projecttitle" placeholder="e.g. mini2P imaging - orexin circuit" style="font-size:16px;font-weight:bold;color:#1f5578;">
+  </div>
+
+  <div class="mw-band">
+    <span class="mw-band-ico">&#128123;</span>
+    <span>Animal Management</span>
+    <span class="mw-band-sub">register &amp; view your mice</span>
+  </div>
+
+  <div class="mw-grid">
+    <div class="mw-field"><label>Mouse ID</label><input type="text" name="m_id" id="m_id" placeholder="M-0421"></div>
+    <div class="mw-field"><label>Ear Tag</label><input type="text" name="m_eartag" id="m_eartag" placeholder="3L / 2R"></div>
+    <div class="mw-field"><label>Sex</label>
+      <select name="m_sex" id="m_sex">
+        <option value="">--</option><option value="male">Male</option>
+        <option value="female">Female</option><option value="unknown">Unknown</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Cage Number</label><input type="text" name="m_cage" id="m_cage" placeholder="C-117"></div>
+    <div class="mw-field"><label>Group / Batch</label><input type="text" name="m_group" id="m_group" placeholder="batch1"></div>
+    <div class="mw-field"><label>Date of Birth</label><input type="date" name="m_dob" id="m_dob"></div>
+    <div class="mw-field"><label>Strain / Background</label><input type="text" name="m_strain" id="m_strain" placeholder="C57BL/6J"></div>
+    <div class="mw-field mw-span2"><label>Genotype</label>
+      <select name="m_genotype" id="m_genotype">
+        <option value="">-- select --</option><option value="wt">WT</option>
+        <option value="VGluT2-Cre">VGluT2-Cre</option><option value="VGAT-cre">VGAT-cre</option>
+        <option value="TH-Cre">TH-Cre</option><option value="ORX-Cre">ORX-Cre</option>
+        <option value="VGluT2-Cre-tdt">VGluT2-Cre-tdt</option><option value="VGAT-cre-tdt">VGAT-cre-tdt</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Genotype (final value — edit if needed)</label><input type="text" name="m_genotypeother" id="m_genotypeother" placeholder="auto-fills from dropdown; overwrite here"></div>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="addmousebtn">Add Mouse</button>
+    <button type="button" class="mw-btn sec" id="clearmousebtn">Clear</button>
+    <span class="mw-msg" id="mousemsg"></span>
+  </div>
+
+  <h3 id="rosterhdr" style="cursor:pointer;">
+    <span id="rostertoggle">&#9662;</span> Mouse Roster <span id="rostercount" style="font-weight:normal;text-transform:none;color:#6b7885;"></span>
+  </h3>
+  <table class="mw-table" id="rostertable">
+    <thead><tr>
+      <th style="width:90px;">Mouse ID</th><th style="width:70px;">Ear Tag</th><th style="width:60px;">Sex</th>
+      <th style="width:70px;">Cage</th><th style="width:70px;">Group</th><th style="width:90px;">DOB</th><th style="width:70px;">Age</th>
+      <th>Genotype</th><th style="width:70px;">Strain</th><th style="width:90px;">Actions</th>
+    </tr></thead>
+    <tbody id="rosterbody">
+      <tr><td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="mw-band">
+    <span class="mw-band-ico">&#128197;</span>
+    <span>Event Logging</span>
+    <span class="mw-band-sub">record &amp; track experiments</span>
+  </div>
+
+  <div class="mw-grid">
+    <div class="mw-field"><label>Date</label><input type="date" name="e_date" id="e_date"></div>
+    <div class="mw-field"><label>Event Type</label>
+      <select name="e_type" id="e_type">
+        <option value="weaning">Weaning</option><option value="genotyping">Genotyping</option>
+        <option value="weight">Weight measurement</option><option value="dosing">Treatment / Dosing</option>
+        <option value="surgery">Surgery</option><option value="Handling">Handling</option>
+        <option value="Add mini2P base">Add mini2P base</option><option value="Imaging">Imaging</option>
+        <option value="Perfusion">Perfusion</option><option value="Slicing">Slicing</option>
+        <option value="behavior">Behavioral test</option><option value="tissue">Tissue collection</option>
+        <option value="breeding">Breeding setup</option><option value="health">Health observation</option>
+        <option value="transfer">Transfer / Re-cage</option><option value="endpoint">Euthanasia / Endpoint</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="mw-field"><label>Protocol / IACUC #</label><input type="text" name="e_protocol" id="e_protocol" placeholder="IACUC-2024-118"></div>
+    <div class="mw-field"><label>Experimenter / User</label><input type="text" name="e_user" id="e_user" placeholder="initials or name"></div>
+    <div class="mw-field mw-span2"><label>File Storage Location</label><input type="text" name="e_fileloc" id="e_fileloc" placeholder="path, drive, or URL where data is stored"></div>
+    <div class="mw-field mw-span3"><label>Apply to which mice? (select one or more)</label>
+      <div class="mw-bar" style="margin-top:0;margin-bottom:6px;">
+        <select id="e_groupsel" name="e_groupsel" style="width:auto;min-width:150px;">
+          <option value="">-- add a group --</option>
+        </select>
+        <button type="button" class="mw-btn sec" id="e_addgroupbtn">Add Group's Mice</button>
+        <button type="button" class="mw-btn sec" id="e_selallbtn">Select All</button>
+        <button type="button" class="mw-btn sec" id="e_clrallbtn">Clear All</button>
+      </div>
+      <div class="mw-checks" id="e_micechecks">
+        <span style="color:#6b7885;font-style:italic;">Add mice above first.</span>
+      </div>
+    </div>
+    <div class="mw-field mw-span3"><label>Common Details (applies to all selected mice)</label>
+      <textarea name="e_details" id="e_details" placeholder="Shared notes: dose, protocol step, operator initials..."></textarea>
+    </div>
+    <div class="mw-field mw-span3" id="e_permousewrap" style="display:none;">
+      <label>Per-mouse Details (optional, for the mice checked above)</label>
+      <div id="e_permouse"></div>
+    </div>
+    <div class="mw-field mw-span3"><label>Photos (auto-shrunk to thumbnails; you can add more than one)</label>
+      <input type="file" name="e_photos" id="e_photos" accept="image/*" multiple>
+      <div id="e_photoprev" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="addeventbtn">Add Event</button>
+    <button type="button" class="mw-btn sec" id="cleareventbtn">Clear</button>
+    <span class="mw-msg" id="eventmsg"></span>
+  </div>
+
+  <h3>Event Log</h3>
+  <div class="mw-bar">
+    <label style="font-size:11px;font-weight:bold;color:#6b7885;">Filter by mouse:</label>
+    <select name="filtermouse" id="filtermouse" style="width:auto;min-width:160px;">
+      <option value="__all__">All mice (grouped)</option>
+    </select>
+    <label style="font-size:11px;font-weight:bold;color:#6b7885;">Sort:</label>
+    <select name="sortorder" id="sortorder" style="width:auto;">
+      <option value="oldest">Oldest first</option>
+      <option value="newest">Newest first</option>
+    </select>
+    <button type="button" class="mw-btn sec" id="collapseallbtn">Collapse All</button>
+    <button type="button" class="mw-btn sec" id="expandallbtn">Expand All</button>
+  </div>
+  <table class="mw-table" id="logtable">
+    <thead><tr><th style="width:95px;">Date</th><th style="width:150px;">Type</th><th>Details</th><th style="width:120px;">Protocol</th><th style="width:130px;">Actions</th></tr></thead>
+    <tbody id="logbody">
+      <tr><td colspan="5" style="text-align:center;color:#6b7885;font-style:italic;">No events logged yet.</td></tr>
+    </tbody>
+  </table>
+  <div class="mw-note">Events are grouped by mouse. Use the filter to view a single animal. Age is auto-calculated from DOB.</div>
+
+  <div class="mw-band">
+    <span class="mw-band-ico">&#128190;</span>
+    <span>Data Exchange</span>
+    <span class="mw-band-sub">export &amp; import your records</span>
+  </div>
+
+  <h3>Export to CSV</h3>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="exportbtn">Generate CSV Export</button>
+    <span class="mw-note" style="margin-top:0;">Creates a spreadsheet-ready table of all mice and events (one row per mouse per event).</span>
+  </div>
+  <div class="mw-field mw-span3" id="exportwrap" style="display:none;margin-top:10px;">
+    <label>CSV export — click inside, Select All (Ctrl/Cmd+A), Copy, paste into a spreadsheet or a LabArchives attachment</label>
+    <textarea name="exportbox" id="exportbox" readonly style="min-height:120px;font-family:monospace;font-size:11px;"></textarea>
+    <div class="mw-bar">
+      <button type="button" class="mw-btn sec" id="copyexportbtn">Copy to Clipboard</button>
+      <button type="button" class="mw-btn sec" id="downloadexportbtn">Try Download</button>
+      <span class="mw-msg" id="exportmsg"></span>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px;">Import / Merge from CSV</h3>
+  <div class="mw-field mw-span3">
+    <label>Paste CSV or Excel rows here (same columns as the export), set the options below, then click Import</label>
+    <textarea name="importbox" id="importbox" placeholder="Mouse ID,Ear Tag,Sex,Cage,Group,DOB,Age,Genotype,Strain,Event Date,Age at Event,Event Type,Experimenter,File Location,Protocol,Details,Mouse Note" style="min-height:110px;font-family:monospace;font-size:11px;"></textarea>
+  </div>
+  <div class="mw-bar">
+    <span style="font-size:11px;font-weight:bold;color:#6b7885;">If a Mouse ID already exists:</span>
+    <label style="font-weight:normal;"><input type="radio" name="dupmouse" value="skip" checked style="width:auto;margin-right:4px;">Skip (keep mine)</label>
+    <label style="font-weight:normal;"><input type="radio" name="dupmouse" value="overwrite" style="width:auto;margin-right:4px;">Overwrite from import</label>
+  </div>
+  <div class="mw-bar">
+    <span style="font-size:11px;font-weight:bold;color:#6b7885;">If an event already exists:</span>
+    <label style="font-weight:normal;"><input type="radio" name="dupevent" value="keep" checked style="width:auto;margin-right:4px;">Keep original (skip)</label>
+    <label style="font-weight:normal;"><input type="radio" name="dupevent" value="overwrite" style="width:auto;margin-right:4px;">Overwrite from import</label>
+  </div>
+  <div class="mw-bar">
+    <button type="button" class="mw-btn" id="importbtn">Import / Merge</button>
+    <button type="button" class="mw-btn sec" id="clearimportbtn">Clear Box</button>
+    <span class="mw-msg" id="importmsg"></span>
+  </div>
+  <div class="mw-note">Import auto-detects tab or comma separators and matches columns by header name. An event is treated as the same if Mouse ID + Event Date + Event Type match.</div>
+</div>
+    <!-- ============================================================ -->
+    <!-- LOGGER HTML — END                                            -->
+    <!-- ============================================================ -->
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- LOGGER JS — BEGIN.  To update the widget, replace everything  -->
+<!-- between "LOGGER JS — BEGIN" and "LOGGER JS — END" with the    -->
+<!-- new mouse-log.js.txt contents (keep the assignment name).     -->
+<!-- ============================================================ -->
+<script>
+my_widget_script =
+{
+  mw_mice: [], mw_events: [], mw_editId: null, mw_editEventIdx: null,
+  mw_stagePhotos: [], mw_stagePerMouse: {}, mw_collapsed: {}, mw_rosterCollapsed: false,
+
+  mw_esc: function (s) {
+    if (s === null || s === undefined) { return ''; }
+    s = String(s);
+    s = s.split('&').join('&amp;'); s = s.split('<').join('&lt;');
+    s = s.split('>').join('&gt;'); s = s.split('"').join('&quot;');
+    return s;
+  },
+  mw_today: function () {
+    var d = new Date();
+    var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd = ('0' + d.getDate()).slice(-2);
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  },
+  mw_trim: function (s) { if (s === null || s === undefined) { return ''; } return String(s).replace(/^\s+/, '').replace(/\s+$/, ''); },
+  mw_sortEvents: function () {
+    var self = this; var dir = 1;
+    var ssel = document.getElementById('sortorder');
+    if (ssel && ssel.value === 'newest') { dir = -1; }
+    this.mw_events.sort(function (a, b) {
+      var da = self.mw_parseDate(a.date); var db = self.mw_parseDate(b.date);
+      var ta = da ? da.getTime() : 0; var tb = db ? db.getTime() : 0;
+      if (ta < tb) { return -1 * dir; } if (ta > tb) { return 1 * dir; } return 0;
+    });
+  },
+  mw_ageAt: function (dob, eventDate) {
+    var d0 = this.mw_parseDate(dob); var d1 = this.mw_parseDate(eventDate);
+    if (!d0 || !d1) { return ''; }
+    var days = Math.floor((d1.getTime() - d0.getTime()) / 86400000);
+    if (days < 0) { return ''; } return days + 'd (' + Math.floor(days / 7) + 'w)';
+  },
+  mw_parseDate: function (s) {
+    if (!s) { return null; } s = this.mw_trim(s); var m;
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) { return new Date(parseInt(m[3],10), parseInt(m[1],10)-1, parseInt(m[2],10)); }
+    m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) { return new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10)); }
+    var d = new Date(s); return isNaN(d.getTime()) ? null : d;
+  },
+  mw_ageStr: function (dob) {
+    var d0 = this.mw_parseDate(dob); if (!d0) { return ''; }
+    var days = Math.floor((new Date().getTime() - d0.getTime()) / 86400000);
+    if (days < 0) { return 'future'; } return days + 'd (' + Math.floor(days / 7) + 'w)';
+  },
+  mw_selText: function (id) { var sel = document.getElementById(id); if (!sel || sel.selectedIndex < 0) { return ''; } return sel.options[sel.selectedIndex].text; },
+  mw_msg: function (id, text, isError) {
+    var el = document.getElementById(id); if (!el) { return; }
+    el.textContent = text ? text : '';
+    if (isError) { el.style.color = '#c0392b'; } else { el.style.color = '#2e8b57'; }
+    if (text) { window.setTimeout(function () { var e2 = document.getElementById(id); if (e2) { e2.textContent = ''; } }, 3000); }
+  },
+  mw_findMouse: function (mid) { var i; for (i = 0; i < this.mw_mice.length; i++) { if (this.mw_mice[i].id === mid) { return this.mw_mice[i]; } } return null; },
+
+  mw_readMouseForm: function () {
+    var m = {};
+    m.id = this.mw_trim(document.getElementById('m_id').value);
+    m.eartag = this.mw_trim(document.getElementById('m_eartag').value);
+    m.sex = this.mw_selText('m_sex');
+    m.cage = this.mw_trim(document.getElementById('m_cage').value);
+    m.group = this.mw_trim(document.getElementById('m_group').value);
+    m.dob = this.mw_trim(document.getElementById('m_dob').value);
+    m.strain = this.mw_trim(document.getElementById('m_strain').value);
+    m.genotype = this.mw_trim(document.getElementById('m_genotypeother').value);
+    return m;
+  },
+  mw_addMouse: function () {
+    var m = this.mw_readMouseForm();
+    if (!m.id) { this.mw_msg('mousemsg', 'Mouse ID is required.', true); return; }
+    if (this.mw_editId) {
+      var oldId = this.mw_editId;
+      if (m.id !== oldId && this.mw_findMouse(m.id)) { this.mw_msg('mousemsg', 'That Mouse ID already exists.', true); return; }
+      var target = this.mw_findMouse(oldId);
+      if (target) { target.id=m.id; target.eartag=m.eartag; target.sex=m.sex; target.cage=m.cage; target.group=m.group; target.dob=m.dob; target.strain=m.strain; target.genotype=m.genotype; }
+      if (m.id !== oldId) {
+        var k; for (k = 0; k < this.mw_events.length; k++) { var arr = this.mw_events[k].mice; var n; for (n = 0; n < arr.length; n++) { if (arr[n] === oldId) { arr[n] = m.id; } } }
+      }
+      this.mw_endEdit(); this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls(); this.mw_renderFilter(); this.mw_renderLog();
+      this.mw_msg('mousemsg', 'Mouse updated.', false); if(window.MLmarkDirty){window.MLmarkDirty();} return;
+    }
+    if (this.mw_findMouse(m.id)) { this.mw_msg('mousemsg', 'That Mouse ID already exists.', true); return; }
+    this.mw_mice.push(m);
+    document.getElementById('m_id').value = ''; document.getElementById('m_eartag').value = '';
+    this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls(); this.mw_renderFilter(); this.mw_renderLog();
+    this.mw_msg('mousemsg', 'Mouse added. Shared fields kept for next littermate.', false); if(window.MLmarkDirty){window.MLmarkDirty();}
+  },
+  mw_editMouse: function (mid) {
+    var m = this.mw_findMouse(mid); if (!m) { return; }
+    document.getElementById('m_id').value = m.id; document.getElementById('m_eartag').value = m.eartag;
+    document.getElementById('m_sex').value = m.sex ? this.mw_valueForText('m_sex', m.sex) : '';
+    document.getElementById('m_cage').value = m.cage; document.getElementById('m_group').value = m.group || '';
+    document.getElementById('m_dob').value = m.dob; document.getElementById('m_strain').value = m.strain;
+    document.getElementById('m_genotypeother').value = m.genotype || '';
+    var gsel = document.getElementById('m_genotype'); var matched = this.mw_valueForText('m_genotype', m.genotype);
+    if (matched) { gsel.value = matched; } else if (m.genotype) { gsel.value = 'other'; } else { gsel.value = ''; }
+    this.mw_editId = mid;
+    var btn = document.getElementById('addmousebtn'); if (btn) { btn.textContent = 'Update Mouse'; }
+    var cbtn = document.getElementById('clearmousebtn'); if (cbtn) { cbtn.textContent = 'Cancel Edit'; }
+    this.mw_msg('mousemsg', 'Editing ' + mid + ' - make changes and click Update.', false);
+    var idf = document.getElementById('m_id'); if (idf && idf.scrollIntoView) { idf.scrollIntoView({ block: 'center' }); }
+  },
+  mw_valueForText: function (selId, str) {
+    var sel = document.getElementById(selId); if (!sel) { return ''; } var i;
+    for (i = 0; i < sel.options.length; i++) { if (sel.options[i].text === str || sel.options[i].value === str) { return sel.options[i].value; } } return '';
+  },
+  mw_endEdit: function () {
+    this.mw_editId = null;
+    var btn = document.getElementById('addmousebtn'); if (btn) { btn.textContent = 'Add Mouse'; }
+    var cbtn = document.getElementById('clearmousebtn'); if (cbtn) { cbtn.textContent = 'Clear'; }
+  },
+  mw_clearMouse: function () {
+    var ids=['m_id','m_eartag','m_sex','m_cage','m_group','m_dob','m_strain','m_genotype','m_genotypeother']; var i;
+    for(i=0;i<ids.length;i++){ document.getElementById(ids[i]).value=''; } this.mw_endEdit();
+  },
+  mw_removeMouse: function (mid) {
+    var i; for (i = 0; i < this.mw_mice.length; i++) { if (this.mw_mice[i].id === mid) { this.mw_mice.splice(i, 1); break; } }
+    var keep = []; var k;
+    for (k = 0; k < this.mw_events.length; k++) {
+      var ev = this.mw_events[k]; var m2 = []; var n;
+      for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] !== mid) { m2.push(ev.mice[n]); } }
+      ev.mice = m2; if (ev.mice.length > 0) { keep.push(ev); }
+    }
+    this.mw_events = keep;
+    this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls(); this.mw_renderFilter(); this.mw_renderLog();
+    if(window.MLmarkDirty){window.MLmarkDirty();}
+  },
+  mw_renderRoster: function () {
+    var self = this; var body = document.getElementById('rosterbody'); if (!body) { return; }
+    if (this.mw_mice.length === 0) { body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.</td></tr>'; this.mw_applyRosterCollapse(); return; }
+    var html = ''; var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      var m = this.mw_mice[i];
+      html += '<tr>';
+      html += '<td>' + this.mw_esc(m.id) + '</td>';
+      html += '<td>' + this.mw_esc(m.eartag) + '</td>';
+      html += '<td>' + this.mw_esc(m.sex) + '</td>';
+      html += '<td>' + this.mw_esc(m.cage) + '</td>';
+      html += '<td>' + this.mw_esc(m.group || '') + '</td>';
+      html += '<td>' + this.mw_esc(m.dob) + '</td>';
+      html += '<td>' + this.mw_esc(this.mw_ageStr(m.dob)) + '</td>';
+      html += '<td>' + this.mw_esc(m.genotype) + '</td>';
+      html += '<td>' + this.mw_esc(m.strain) + '</td>';
+      html += '<td style="white-space:nowrap;"><button type="button" class="mw-btn sec mw-editmouse" data-id="' + this.mw_esc(m.id) + '" style="padding:2px 7px;margin-right:4px;">edit</button><button type="button" class="mw-btn sec mw-delmouse" data-id="' + this.mw_esc(m.id) + '" style="padding:2px 7px;">x</button></td>';
+      html += '</tr>';
+    }
+    body.innerHTML = html;
+    var edits = body.querySelectorAll('.mw-editmouse'); var q;
+    for (q = 0; q < edits.length; q++) { edits[q].addEventListener('click', function () { self.mw_editMouse(this.getAttribute('data-id')); }); }
+    var dels = body.querySelectorAll('.mw-delmouse'); var j;
+    for (j = 0; j < dels.length; j++) { dels[j].addEventListener('click', function () { self.mw_removeMouse(this.getAttribute('data-id')); }); }
+    this.mw_applyRosterCollapse();
+  },
+  mw_groupList: function () {
+    var seen = {}; var out = []; var i;
+    for (i = 0; i < this.mw_mice.length; i++) { var g = this.mw_mice[i].group; if (g && !seen[g]) { seen[g] = true; out.push(g); } }
+    out.sort(); return out;
+  },
+  mw_renderGroupControls: function () {
+    var sel = document.getElementById('e_groupsel'); if (!sel) { return; }
+    var prev = sel.value; var groups = this.mw_groupList();
+    var html = '<option value="">-- add a group --</option>'; var i;
+    for (i = 0; i < groups.length; i++) { html += '<option value="' + this.mw_esc(groups[i]) + '">' + this.mw_esc(groups[i]) + '</option>'; }
+    sel.innerHTML = html;
+    var found = false; var o; for (o = 0; o < sel.options.length; o++) { if (sel.options[o].value === prev) { found = true; break; } }
+    sel.value = found ? prev : '';
+  },
+  mw_addGroupMice: function () {
+    var sel = document.getElementById('e_groupsel'); if (!sel || !sel.value) { this.mw_msg('eventmsg', 'Pick a group first.', true); return; }
+    var g = sel.value; var chks = document.querySelectorAll('.mw-micechk'); var count = 0; var i;
+    for (i = 0; i < chks.length; i++) { var m = this.mw_findMouse(chks[i].value); if (m && m.group === g) { chks[i].checked = true; count++; } }
+    this.mw_renderPerMouse(); this.mw_msg('eventmsg', 'Ticked ' + count + ' mouse(s) in ' + g + '.', false);
+  },
+  mw_selectAllMice: function (on) { var chks = document.querySelectorAll('.mw-micechk'); var i; for (i = 0; i < chks.length; i++) { chks[i].checked = on; } this.mw_renderPerMouse(); },
+  mw_renderMiceChecks: function () {
+    var box = document.getElementById('e_micechecks'); if (!box) { return; }
+    if (this.mw_mice.length === 0) { box.innerHTML = '<span style="color:#6b7885;font-style:italic;">Add mice above first.</span>'; return; }
+    var html = ''; var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      var m = this.mw_mice[i]; var lbl = this.mw_esc(m.id);
+      if (m.eartag) { lbl += ' (' + this.mw_esc(m.eartag) + ')'; }
+      if (m.group) { lbl += ' [' + this.mw_esc(m.group) + ']'; }
+      html += '<label><input type="checkbox" class="mw-micechk" value="' + this.mw_esc(m.id) + '">' + lbl + '</label>';
+    }
+    box.innerHTML = html;
+    var self = this; var chks = box.querySelectorAll('.mw-micechk'); var c;
+    for (c = 0; c < chks.length; c++) { chks[c].addEventListener('change', function () { self.mw_renderPerMouse(); }); }
+    this.mw_renderPerMouse();
+  },
+  mw_getCheckedMice: function () { var out = []; var chks = document.querySelectorAll('.mw-micechk'); var i; for (i = 0; i < chks.length; i++) { if (chks[i].checked) { out.push(chks[i].value); } } return out; },
+  mw_renderPerMouse: function () {
+    var wrap = document.getElementById('e_permousewrap'); var box = document.getElementById('e_permouse'); if (!wrap || !box) { return; }
+    this.mw_capturePerMouse();
+    var checked = this.mw_getCheckedMice();
+    if (checked.length === 0) { box.innerHTML = ''; wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block'; var html = ''; var i;
+    for (i = 0; i < checked.length; i++) {
+      var mid = checked[i]; var m = this.mw_findMouse(mid); var lbl = this.mw_esc(mid);
+      if (m && m.eartag) { lbl += ' (' + this.mw_esc(m.eartag) + ')'; }
+      var val = this.mw_stagePerMouse[mid] ? this.mw_esc(this.mw_stagePerMouse[mid]) : '';
+      html += '<div class="mw-pmrow"><span class="mw-pmlabel">' + lbl + '</span><input type="text" class="mw-pminput" data-id="' + this.mw_esc(mid) + '" value="' + val + '" placeholder="note specific to this mouse"></div>';
+    }
+    box.innerHTML = html;
+  },
+  mw_capturePerMouse: function () {
+    var ins = document.querySelectorAll('.mw-pminput'); var i;
+    for (i = 0; i < ins.length; i++) { var id = ins[i].getAttribute('data-id'); var v = this.mw_trim(ins[i].value); if (v) { this.mw_stagePerMouse[id] = v; } else { if (this.mw_stagePerMouse[id]) { delete this.mw_stagePerMouse[id]; } } }
+  },
+  mw_handlePhotoInput: function (fileList) {
+    var self = this; if (!fileList || fileList.length === 0) { return; } var maxDim = 800; var i;
+    for (i = 0; i < fileList.length; i++) {
+      (function (file) {
+        if (!file.type || file.type.indexOf('image/') !== 0) { return; }
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var img = new Image();
+          img.onload = function () {
+            var w = img.width, h = img.height;
+            if (w > h) { if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; } }
+            else { if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; } }
+            var canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+            var dataUrl; try { dataUrl = canvas.toDataURL('image/jpeg', 0.7); } catch (err) { dataUrl = ''; }
+            if (dataUrl) { self.mw_stagePhotos.push(dataUrl); self.mw_renderStagePhotos(); }
+          };
+          img.onerror = function () { self.mw_msg('eventmsg', 'Could not read one image.', true); };
+          img.src = ev.target.result;
+        };
+        reader.onerror = function () { self.mw_msg('eventmsg', 'File read blocked in this view.', true); };
+        reader.readAsDataURL(file);
+      })(fileList[i]);
+    }
+    var inp = document.getElementById('e_photos'); if (inp) { inp.value = ''; }
+  },
+  mw_renderStagePhotos: function () {
+    var self = this; var box = document.getElementById('e_photoprev'); if (!box) { return; }
+    if (this.mw_stagePhotos.length === 0) { box.innerHTML = ''; return; }
+    var html = ''; var i;
+    for (i = 0; i < this.mw_stagePhotos.length; i++) {
+      html += '<span class="mw-thumb"><img src="' + this.mw_stagePhotos[i] + '" data-i="' + i + '" class="mw-stagethumb"><button type="button" class="mw-thumbx mw-stagex" data-i="' + i + '">x</button></span>';
+    }
+    box.innerHTML = html;
+    var xs = box.querySelectorAll('.mw-stagex'); var a;
+    for (a = 0; a < xs.length; a++) { xs[a].addEventListener('click', function () { self.mw_stagePhotos.splice(parseInt(this.getAttribute('data-i'), 10), 1); self.mw_renderStagePhotos(); }); }
+    var ims = box.querySelectorAll('.mw-stagethumb'); var b;
+    for (b = 0; b < ims.length; b++) { ims[b].addEventListener('click', function () { self.mw_openPhoto(this.getAttribute('src')); }); }
+  },
+  mw_openPhoto: function (dataUrl) { try { var w = window.open(); if (w && w.document) { w.document.write('<img src="' + dataUrl + '" style="max-width:100%">'); } } catch (err) {} },
+  mw_addEvent: function () {
+    var date = document.getElementById('e_date').value;
+    if (!date) { this.mw_msg('eventmsg', 'Event date is required.', true); return; }
+    var mice = this.mw_getCheckedMice();
+    if (mice.length === 0) { this.mw_msg('eventmsg', 'Select at least one mouse.', true); return; }
+    this.mw_capturePerMouse();
+    var perMouse = {}; var pmI;
+    for (pmI = 0; pmI < mice.length; pmI++) { if (this.mw_stagePerMouse[mice[pmI]]) { perMouse[mice[pmI]] = this.mw_stagePerMouse[mice[pmI]]; } }
+    if (this.mw_editEventIdx !== null && this.mw_editEventIdx >= 0 && this.mw_editEventIdx < this.mw_events.length) {
+      var ev = this.mw_events[this.mw_editEventIdx];
+      ev.date=this.mw_trim(date); ev.type=this.mw_selText('e_type'); ev.protocol=this.mw_trim(document.getElementById('e_protocol').value);
+      ev.user=this.mw_trim(document.getElementById('e_user').value); ev.fileloc=this.mw_trim(document.getElementById('e_fileloc').value);
+      ev.details=this.mw_trim(document.getElementById('e_details').value); ev.mice=mice; ev.photos=this.mw_stagePhotos.slice(0); ev.perMouse=perMouse;
+      this.mw_sortEvents(); this.mw_endEventEdit(); this.mw_clearEvent(); this.mw_renderLog();
+      this.mw_msg('eventmsg', 'Event updated.', false); if(window.MLmarkDirty){window.MLmarkDirty();} return;
+    }
+    var nev = {};
+    nev.date=this.mw_trim(date); nev.type=this.mw_selText('e_type'); nev.protocol=this.mw_trim(document.getElementById('e_protocol').value);
+    nev.user=this.mw_trim(document.getElementById('e_user').value); nev.fileloc=this.mw_trim(document.getElementById('e_fileloc').value);
+    nev.details=this.mw_trim(document.getElementById('e_details').value); nev.mice=mice; nev.photos=this.mw_stagePhotos.slice(0); nev.perMouse=perMouse;
+    this.mw_events.push(nev); this.mw_sortEvents(); this.mw_clearEvent(); this.mw_renderLog();
+    this.mw_msg('eventmsg', 'Event added.', false); if(window.MLmarkDirty){window.MLmarkDirty();}
+  },
+  mw_editEvent: function (idx) {
+    if (idx < 0 || idx >= this.mw_events.length) { return; } var ev = this.mw_events[idx];
+    document.getElementById('e_date').value = ev.date || '';
+    document.getElementById('e_type').value = this.mw_valueForText('e_type', ev.type) || ev.type || '';
+    document.getElementById('e_protocol').value = ev.protocol || ''; document.getElementById('e_user').value = ev.user || '';
+    document.getElementById('e_fileloc').value = ev.fileloc || ''; document.getElementById('e_details').value = ev.details || '';
+    this.mw_stagePhotos = (ev.photos && ev.photos.length) ? ev.photos.slice(0) : []; this.mw_renderStagePhotos();
+    this.mw_stagePerMouse = {}; if (ev.perMouse) { var pk; for (pk in ev.perMouse) { if (ev.perMouse.hasOwnProperty(pk)) { this.mw_stagePerMouse[pk] = ev.perMouse[pk]; } } }
+    var chks = document.querySelectorAll('.mw-micechk'); var i;
+    for (i = 0; i < chks.length; i++) { var on = false; var n; for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] === chks[i].value) { on = true; break; } } chks[i].checked = on; }
+    this.mw_renderPerMouse();
+    this.mw_editEventIdx = idx;
+    var btn = document.getElementById('addeventbtn'); if (btn) { btn.textContent = 'Update Event'; }
+    var cbtn = document.getElementById('cleareventbtn'); if (cbtn) { cbtn.textContent = 'Cancel Edit'; }
+    this.mw_msg('eventmsg', 'Editing event - make changes and click Update.', false);
+    var df = document.getElementById('e_date'); if (df && df.scrollIntoView) { df.scrollIntoView({ block: 'center' }); }
+  },
+  mw_endEventEdit: function () {
+    this.mw_editEventIdx = null;
+    var btn = document.getElementById('addeventbtn'); if (btn) { btn.textContent = 'Add Event'; }
+    var cbtn = document.getElementById('cleareventbtn'); if (cbtn) { cbtn.textContent = 'Clear'; }
+  },
+  mw_duplicateEvent: function (idx) {
+    if (idx < 0 || idx >= this.mw_events.length) { return; } var ev = this.mw_events[idx]; this.mw_endEventEdit();
+    document.getElementById('e_date').value = this.mw_today();
+    document.getElementById('e_type').value = this.mw_valueForText('e_type', ev.type) || ev.type || '';
+    document.getElementById('e_protocol').value = ev.protocol || ''; document.getElementById('e_user').value = ev.user || '';
+    document.getElementById('e_fileloc').value = ev.fileloc || ''; document.getElementById('e_details').value = ev.details || '';
+    this.mw_stagePhotos = []; this.mw_renderStagePhotos();
+    this.mw_stagePerMouse = {}; if (ev.perMouse) { var pk; for (pk in ev.perMouse) { if (ev.perMouse.hasOwnProperty(pk)) { this.mw_stagePerMouse[pk] = ev.perMouse[pk]; } } }
+    var chks = document.querySelectorAll('.mw-micechk'); var i;
+    for (i = 0; i < chks.length; i++) { var on = false; var n; for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] === chks[i].value) { on = true; break; } } chks[i].checked = on; }
+    this.mw_renderPerMouse();
+    this.mw_msg('eventmsg', 'Copied to form - change the date/details and click Add Event.', false);
+    var df = document.getElementById('e_date'); if (df && df.scrollIntoView) { df.scrollIntoView({ block: 'center' }); }
+  },
+  mw_clearEvent: function () {
+    document.getElementById('e_protocol').value = ''; document.getElementById('e_user').value = '';
+    document.getElementById('e_fileloc').value = ''; document.getElementById('e_details').value = '';
+    document.getElementById('e_date').value = this.mw_today();
+    var chks = document.querySelectorAll('.mw-micechk'); var i; for (i = 0; i < chks.length; i++) { chks[i].checked = false; }
+    this.mw_stagePhotos = []; this.mw_renderStagePhotos(); this.mw_stagePerMouse = {}; this.mw_renderPerMouse(); this.mw_endEventEdit();
+  },
+  mw_removeEvent: function (idx) { if (idx >= 0 && idx < this.mw_events.length) { this.mw_events.splice(idx, 1); this.mw_renderLog(); if(window.MLmarkDirty){window.MLmarkDirty();} } },
+  mw_renderFilter: function () {
+    var sel = document.getElementById('filtermouse'); if (!sel) { return; } var prev = sel.value;
+    var html = '<option value="__all__">All mice (grouped)</option>';
+    var groups = this.mw_groupList(); var g;
+    for (g = 0; g < groups.length; g++) { html += '<option value="__grp__' + this.mw_esc(groups[g]) + '">Group: ' + this.mw_esc(groups[g]) + '</option>'; }
+    var i; for (i = 0; i < this.mw_mice.length; i++) { var m = this.mw_mice[i]; html += '<option value="' + this.mw_esc(m.id) + '">' + this.mw_esc(m.id) + '</option>'; }
+    sel.innerHTML = html;
+    var found = false; var o; for (o = 0; o < sel.options.length; o++) { if (sel.options[o].value === prev) { found = true; break; } }
+    sel.value = found ? prev : '__all__';
+  },
+  mw_eventsForMouse: function (mid) {
+    var out = []; var i;
+    for (i = 0; i < this.mw_events.length; i++) { var ev = this.mw_events[i]; var n; for (n = 0; n < ev.mice.length; n++) { if (ev.mice[n] === mid) { out.push({ ev: ev, idx: i }); break; } } }
+    return out;
+  },
+  mw_rowHtml: function (ev, idx, showMice, forMouseId) {
+    var details = this.mw_esc(ev.details); var protocol = this.mw_esc(ev.protocol); if (!protocol) { protocol = '&mdash;'; }
+    var dcell = details ? details : '';
+    if (forMouseId && ev.perMouse && ev.perMouse[forMouseId]) {
+      var note = this.mw_esc(ev.perMouse[forMouseId]);
+      dcell = dcell ? (dcell + '<br><span style="color:#1f5578;">&raquo; ' + note + '</span>') : ('<span style="color:#1f5578;">&raquo; ' + note + '</span>');
+    }
+    if (!dcell) { dcell = '&mdash;'; }
+    var meta = '';
+    if (forMouseId) { var fm = this.mw_findMouse(forMouseId); if (fm && fm.dob) { var ageAt = this.mw_ageAt(fm.dob, ev.date); if (ageAt) { meta = 'Age: ' + ageAt; } } }
+    if (ev.user) { if (meta) { meta += ' | '; } meta += 'By: ' + this.mw_esc(ev.user); }
+    if (ev.fileloc) { if (meta) { meta += ' | '; } meta += 'File: ' + this.mw_esc(ev.fileloc); }
+    if (meta) { dcell += '<br><span style="color:#6b7885;font-size:10px;">' + meta + '</span>'; }
+    if (ev.photos && ev.photos.length) { dcell += '<div class="mw-logthumb">'; var p; for (p = 0; p < ev.photos.length; p++) { dcell += '<img src="' + ev.photos[p] + '" class="mw-openphoto">'; } dcell += '</div>'; }
+    var typeCell = this.mw_esc(ev.type);
+    if (showMice) { typeCell += '<br><span style="color:#6b7885;font-size:10px;">' + this.mw_esc(ev.mice.join(', ')) + '</span>'; }
+    var h = '<tr>';
+    h += '<td>' + this.mw_esc(ev.date) + '</td>';
+    h += '<td>' + typeCell + '</td>';
+    h += '<td>' + dcell + '</td>';
+    h += '<td>' + protocol + '</td>';
+    h += '<td style="white-space:nowrap;"><button type="button" class="mw-btn sec mw-editevent" data-i="' + idx + '" style="padding:2px 7px;margin-right:4px;">edit</button><button type="button" class="mw-btn sec mw-dupevent" data-i="' + idx + '" style="padding:2px 7px;margin-right:4px;">copy</button><button type="button" class="mw-btn sec mw-delevent" data-i="' + idx + '" style="padding:2px 7px;">x</button></td>';
+    h += '</tr>'; return h;
+  },
+  mw_renderGroupedFor: function (miceArr) {
+    var html = ''; var i;
+    for (i = 0; i < miceArr.length; i++) {
+      var m = miceArr[i]; var rows = this.mw_eventsForMouse(m.id);
+      var isCollapsed = this.mw_collapsed[m.id] ? true : false;
+      var arrow = isCollapsed ? '&#9656;' : '&#9662;';
+      var hdr = arrow + ' ' + this.mw_esc(m.id);
+      if (m.eartag) { hdr += ' - tag ' + this.mw_esc(m.eartag); }
+      if (m.group) { hdr += ' [' + this.mw_esc(m.group) + ']'; }
+      hdr += ' (' + rows.length + ' event' + (rows.length === 1 ? '' : 's') + ')';
+      html += '<tr class="mw-grouphdr mw-toggle" data-id="' + this.mw_esc(m.id) + '" style="cursor:pointer;"><td colspan="5">' + hdr + '</td></tr>';
+      if (!isCollapsed) {
+        if (rows.length === 0) { html += '<tr><td colspan="5" style="color:#6b7885;font-style:italic;">no events</td></tr>'; }
+        else { var r; for (r = 0; r < rows.length; r++) { html += this.mw_rowHtml(rows[r].ev, rows[r].idx, false, m.id); } }
+      }
+    }
+    return html;
+  },
+  mw_renderLog: function () {
+    var self = this; var body = document.getElementById('logbody'); if (!body) { return; }
+    var filter = '__all__'; var fsel = document.getElementById('filtermouse'); if (fsel) { filter = fsel.value; }
+    if (this.mw_events.length === 0) { body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6b7885;font-style:italic;">No events logged yet.</td></tr>'; this.mw_wireLogDeletes(); return; }
+    var html = '';
+    if (filter === '__all__') { html = this.mw_renderGroupedFor(this.mw_mice); }
+    else if (filter.indexOf('__grp__') === 0) {
+      var gname = filter.substring(7); var inGroup = []; var a;
+      for (a = 0; a < this.mw_mice.length; a++) { if (this.mw_mice[a].group === gname) { inGroup.push(this.mw_mice[a]); } }
+      html = inGroup.length === 0 ? ('<tr><td colspan="5" style="color:#6b7885;font-style:italic;">No mice in group ' + this.mw_esc(gname) + '.</td></tr>') : this.mw_renderGroupedFor(inGroup);
+    } else {
+      var single = this.mw_eventsForMouse(filter);
+      if (single.length === 0) { html = '<tr><td colspan="5" style="color:#6b7885;font-style:italic;">No events for ' + this.mw_esc(filter) + '.</td></tr>'; }
+      else { var s; for (s = 0; s < single.length; s++) { html += this.mw_rowHtml(single[s].ev, single[s].idx, false, filter); } }
+    }
+    body.innerHTML = html; this.mw_wireLogDeletes();
+  },
+  mw_wireLogDeletes: function () {
+    var self = this;
+    var edits = document.querySelectorAll('.mw-editevent'); var q;
+    for (q = 0; q < edits.length; q++) { edits[q].addEventListener('click', function () { self.mw_editEvent(parseInt(this.getAttribute('data-i'), 10)); }); }
+    var dups = document.querySelectorAll('.mw-dupevent'); var d;
+    for (d = 0; d < dups.length; d++) { dups[d].addEventListener('click', function () { self.mw_duplicateEvent(parseInt(this.getAttribute('data-i'), 10)); }); }
+    var dels = document.querySelectorAll('.mw-delevent'); var j;
+    for (j = 0; j < dels.length; j++) { dels[j].addEventListener('click', function () { self.mw_removeEvent(parseInt(this.getAttribute('data-i'), 10)); }); }
+    var ph = document.querySelectorAll('.mw-openphoto'); var k;
+    for (k = 0; k < ph.length; k++) { ph[k].addEventListener('click', function () { self.mw_openPhoto(this.getAttribute('src')); }); }
+    var tg = document.querySelectorAll('.mw-toggle'); var t;
+    for (t = 0; t < tg.length; t++) { tg[t].addEventListener('click', function () { var id = this.getAttribute('data-id'); if (self.mw_collapsed[id]) { delete self.mw_collapsed[id]; } else { self.mw_collapsed[id] = true; } self.mw_renderLog(); }); }
+  },
+  mw_collapseAll: function (on) {
+    if (on) { var i; for (i = 0; i < this.mw_mice.length; i++) { this.mw_collapsed[this.mw_mice[i].id] = true; } } else { this.mw_collapsed = {}; }
+    this.mw_renderLog();
+  },
+  mw_toggleRoster: function () { this.mw_rosterCollapsed = !this.mw_rosterCollapsed; this.mw_applyRosterCollapse(); },
+  mw_applyRosterCollapse: function () {
+    var tbl = document.getElementById('rostertable'); var arrow = document.getElementById('rostertoggle'); var count = document.getElementById('rostercount');
+    if (tbl) { tbl.style.display = this.mw_rosterCollapsed ? 'none' : ''; }
+    if (arrow) { arrow.innerHTML = this.mw_rosterCollapsed ? '&#9656;' : '&#9662;'; }
+    if (count) { var nm = this.mw_mice.length; count.textContent = '(' + nm + ' ' + (nm === 1 ? 'mouse' : 'mice') + ')'; }
+  },
+  mw_csvCell: function (v) { v = (v === null || v === undefined) ? '' : String(v); return '"' + v.split('"').join('""') + '"'; },
+  mw_buildCsv: function () {
+    var rows = [];
+    var header = ['Mouse ID','Ear Tag','Sex','Cage','Group','DOB','Age','Genotype','Strain','Event Date','Age at Event','Event Type','Experimenter','File Location','Protocol','Details','Mouse Note'];
+    rows.push(header);
+    var i;
+    for (i = 0; i < this.mw_mice.length; i++) {
+      var m = this.mw_mice[i]; var evs = this.mw_eventsForMouse(m.id);
+      if (evs.length === 0) { rows.push([m.id,m.eartag,m.sex,m.cage,m.group||'',m.dob,this.mw_ageStr(m.dob),m.genotype,m.strain,'','','','','','','','']); }
+      else { var r; for (r = 0; r < evs.length; r++) { var ev = evs[r].ev; var note = (ev.perMouse && ev.perMouse[m.id]) ? ev.perMouse[m.id] : ''; rows.push([m.id,m.eartag,m.sex,m.cage,m.group||'',m.dob,this.mw_ageStr(m.dob),m.genotype,m.strain,ev.date,this.mw_ageAt(m.dob,ev.date),ev.type,ev.user||'',ev.fileloc||'',ev.protocol,ev.details,note]); } }
+    }
+    var out = ''; var a;
+    for (a = 0; a < rows.length; a++) { var line = []; var b; for (b = 0; b < rows[a].length; b++) { line.push(this.mw_csvCell(rows[a][b])); } out += line.join(',') + '\r\n'; }
+    return out;
+  },
+  mw_export: function () {
+    var csv = this.mw_buildCsv(); var box = document.getElementById('exportbox'); var wrap = document.getElementById('exportwrap');
+    if (box) { box.value = csv; } if (wrap) { wrap.style.display = 'block'; } if (box) { box.focus(); box.select(); }
+    this.mw_msg('exportmsg', 'CSV generated below.', false);
+  },
+  mw_copyExport: function () {
+    var box = document.getElementById('exportbox'); if (!box) { return; } box.focus(); box.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    this.mw_msg('exportmsg', ok ? 'Copied to clipboard.' : 'Press Ctrl/Cmd+C to copy.', !ok);
+  },
+  mw_downloadExport: function () {
+    var csv = this.mw_buildCsv();
+    try {
+      var blob = new Blob([csv], { type: 'text/csv' }); var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'mouse_colony_export.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      this.mw_msg('exportmsg', 'Download started (if allowed).', false);
+    } catch (err) { this.mw_msg('exportmsg', 'Download blocked here - use Copy instead.', true); }
+  },
+  mw_detectDelim: function (line) { var tabs = line.split('\t').length - 1; var commas = line.split(',').length - 1; return (tabs >= commas && tabs > 0) ? '\t' : ','; },
+  mw_parseLine: function (line, delim) {
+    var out = []; var field = ''; var inQ = false; var i, c, next;
+    for (i = 0; i < line.length; i++) {
+      c = line.charAt(i);
+      if (inQ) { if (c === '"') { next = line.charAt(i + 1); if (next === '"') { field += '"'; i++; } else { inQ = false; } } else { field += c; } }
+      else { if (c === '"') { inQ = true; } else if (c === delim) { out.push(field); field = ''; } else { field += c; } }
+    }
+    out.push(field); return out;
+  },
+  mw_parseCsv: function (text) {
+    text = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n'); var lines = text.split('\n'); var rows = []; var delim = null; var i;
+    for (i = 0; i < lines.length; i++) { if (this.mw_trim(lines[i]) === '') { continue; } if (delim === null) { delim = this.mw_detectDelim(lines[i]); } rows.push(this.mw_parseLine(lines[i], delim)); }
+    return rows;
+  },
+  mw_getRadio: function (name) { var els = document.querySelectorAll('input[name="' + name + '"]'); var i; for (i = 0; i < els.length; i++) { if (els[i].checked) { return els[i].value; } } return ''; },
+  mw_sameEvent: function (a, b) { return a.date === b.date && a.type === b.type; },
+  mw_normHdr: function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); },
+  mw_mapHeaders: function (headerRow) {
+    var aliases = {
+      id:['mouseid','id','mouse'], eartag:['eartag','tag'], sex:['sex'], cage:['cage','cagenumber'],
+      group:['group','batch','groupbatch'], dob:['dob','dateofbirth','birth'], genotype:['genotype'],
+      strain:['strain','background','strainbackground'], edate:['eventdate','date'], etype:['eventtype','type','event'],
+      user:['experimenter','user','operator'], fileloc:['filelocation','fileloc','filestoragelocation','file'],
+      protocol:['protocol','iacuc','protocoliacuc'], details:['details','commondetails','notes'], note:['mousenote','note','permousenote','permousedetails']
+    };
+    var map = {}; var norm = []; var i; for (i = 0; i < headerRow.length; i++) { norm.push(this.mw_normHdr(headerRow[i])); }
+    var key, j, k;
+    for (key in aliases) { if (!aliases.hasOwnProperty(key)) { continue; } map[key] = -1; for (j = 0; j < aliases[key].length && map[key] === -1; j++) { for (k = 0; k < norm.length; k++) { if (norm[k] === aliases[key][j]) { map[key] = k; break; } } } }
+    return map;
+  },
+  mw_cell: function (row, idx) { if (idx < 0 || idx >= row.length) { return ''; } return this.mw_trim(row[idx] || ''); },
+  mw_importCsv: function () {
+    var raw = document.getElementById('importbox').value;
+    if (!this.mw_trim(raw)) { this.mw_msg('importmsg', 'Paste CSV or Excel rows first.', true); return; }
+    var dupMouse = this.mw_getRadio('dupmouse'); var dupEvent = this.mw_getRadio('dupevent');
+    var rows = this.mw_parseCsv(raw); if (rows.length < 1) { this.mw_msg('importmsg', 'No rows found.', true); return; }
+    var map = this.mw_mapHeaders(rows[0]); var hasHeader = (map.id >= 0 || map.edate >= 0 || map.etype >= 0); var start = 0;
+    if (hasHeader) { start = 1; } else { map = { id:0,eartag:1,sex:2,cage:3,group:4,dob:5,genotype:7,strain:8,edate:9,etype:10,user:11,fileloc:12,protocol:13,details:14,note:15 }; }
+    if (map.id < 0) { this.mw_msg('importmsg', 'Could not find a "Mouse ID" column. Check the header row.', true); return; }
+    var added={mice:0,events:0}, updated={mice:0,events:0}, skipped={mice:0,events:0}, badrows=0; var r;
+    for (r = start; r < rows.length; r++) {
+      var col = rows[r]; if (!col || col.length === 0) { continue; }
+      var id = this.mw_cell(col, map.id); if (!id) { badrows++; continue; }
+      var incoming = { id:id, eartag:this.mw_cell(col,map.eartag), sex:this.mw_cell(col,map.sex), cage:this.mw_cell(col,map.cage), group:this.mw_cell(col,map.group), dob:this.mw_cell(col,map.dob), strain:this.mw_cell(col,map.strain), genotype:this.mw_cell(col,map.genotype) };
+      var existing = this.mw_findMouse(id);
+      if (!existing) { this.mw_mice.push(incoming); added.mice++; existing = incoming; }
+      else if (dupMouse === 'overwrite') { existing.eartag=incoming.eartag; existing.sex=incoming.sex; existing.cage=incoming.cage; existing.group=incoming.group; existing.dob=incoming.dob; existing.strain=incoming.strain; existing.genotype=incoming.genotype; updated.mice++; }
+      else { skipped.mice++; }
+      var edate = this.mw_cell(col, map.edate); var etype = this.mw_cell(col, map.etype);
+      if (edate || etype) {
+        var incNote = this.mw_cell(col, map.note);
+        var incEv = { date:edate, type:etype, user:this.mw_cell(col,map.user), fileloc:this.mw_cell(col,map.fileloc), protocol:this.mw_cell(col,map.protocol), details:this.mw_cell(col,map.details), photos:[], perMouse:{}, mice:[id] };
+        if (incNote) { incEv.perMouse[id] = incNote; }
+        var match = null; var e;
+        for (e = 0; e < this.mw_events.length; e++) { var ex = this.mw_events[e]; var belongs = false; var z; for (z = 0; z < ex.mice.length; z++) { if (ex.mice[z] === id) { belongs = true; break; } } if (belongs && this.mw_sameEvent(ex, incEv)) { match = ex; break; } }
+        if (!match) { this.mw_events.push(incEv); added.events++; }
+        else if (dupEvent === 'overwrite') { match.user=incEv.user; match.fileloc=incEv.fileloc; match.protocol=incEv.protocol; match.details=incEv.details; if (!match.perMouse) { match.perMouse = {}; } if (incNote) { match.perMouse[id] = incNote; } updated.events++; }
+        else { skipped.events++; }
+      }
+    }
+    this.mw_sortEvents(); this.mw_renderAll();
+    var summary = 'Mice +' + added.mice + ' / upd ' + updated.mice + ' / skip ' + skipped.mice + '  |  Events +' + added.events + ' / upd ' + updated.events + ' / skip ' + skipped.events;
+    if (badrows > 0) { summary += '  (' + badrows + ' row(s) had no Mouse ID)'; }
+    this.mw_msg('importmsg', summary, false); if(window.MLmarkDirty){window.MLmarkDirty();}
+  },
+  mw_clearImport: function () { document.getElementById('importbox').value = ''; this.mw_msg('importmsg', '', false); },
+  mw_wire: function () {
+    var self = this;
+    function bind(id, fn) { var el = document.getElementById(id); if (el && !el.getAttribute('data-mw')) { el.setAttribute('data-mw', '1'); el.addEventListener('click', fn); } }
+    bind('addmousebtn', function () { self.mw_addMouse(); }); bind('clearmousebtn', function () { self.mw_clearMouse(); });
+    bind('addeventbtn', function () { self.mw_addEvent(); }); bind('cleareventbtn', function () { self.mw_clearEvent(); });
+    bind('exportbtn', function () { self.mw_export(); }); bind('copyexportbtn', function () { self.mw_copyExport(); });
+    bind('downloadexportbtn', function () { self.mw_downloadExport(); }); bind('importbtn', function () { self.mw_importCsv(); });
+    bind('clearimportbtn', function () { self.mw_clearImport(); }); bind('e_addgroupbtn', function () { self.mw_addGroupMice(); });
+    bind('e_selallbtn', function () { self.mw_selectAllMice(true); }); bind('e_clrallbtn', function () { self.mw_selectAllMice(false); });
+    bind('collapseallbtn', function () { self.mw_collapseAll(true); }); bind('expandallbtn', function () { self.mw_collapseAll(false); });
+    bind('rosterhdr', function () { self.mw_toggleRoster(); });
+    var fsel = document.getElementById('filtermouse'); if (fsel && !fsel.getAttribute('data-mw')) { fsel.setAttribute('data-mw', '1'); fsel.addEventListener('change', function () { self.mw_renderLog(); }); }
+    var ssel = document.getElementById('sortorder'); if (ssel && !ssel.getAttribute('data-mw')) { ssel.setAttribute('data-mw', '1'); ssel.addEventListener('change', function () { self.mw_sortEvents(); self.mw_renderLog(); }); }
+    var ed = document.getElementById('e_date'); if (ed && !ed.value) { ed.value = this.mw_today(); }
+    var pin = document.getElementById('e_photos'); if (pin && !pin.getAttribute('data-mw')) { pin.setAttribute('data-mw', '1'); pin.addEventListener('change', function () { self.mw_handlePhotoInput(this.files); }); }
+    var gsel = document.getElementById('m_genotype');
+    if (gsel && !gsel.getAttribute('data-mw')) { gsel.setAttribute('data-mw', '1'); gsel.addEventListener('change', function () { var v = this.value; if (v === '' || v === 'other') { return; } var txt = this.options[this.selectedIndex].text; document.getElementById('m_genotypeother').value = txt; }); }
+  },
+  mw_renderAll: function () { this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls(); this.mw_renderFilter(); this.mw_renderLog(); },
+  mw_load: function (json_data) {
+    this.mw_mice = []; this.mw_events = []; var title = '';
+    try { var d = json_data; if (typeof d === 'string' && d.length) { d = JSON.parse(d); } if (d && typeof d === 'object') { if (d.mw_mice) { this.mw_mice = d.mw_mice; } if (d.mw_events) { this.mw_events = d.mw_events; } if (d.mw_title) { title = d.mw_title; } } }
+    catch (err) { this.mw_mice = []; this.mw_events = []; }
+    if (!this.mw_mice) { this.mw_mice = []; } if (!this.mw_events) { this.mw_events = []; }
+    var tEl = document.getElementById('projecttitle'); if (tEl) { tEl.value = title; }
+  },
+  init: function (mode, json_data) { if (this.parent_class) { this.parent_class.init(mode, json_data, this); } this.mw_load(json_data); this.mw_wire(); this.mw_renderAll(); },
+  to_json: function () { var obj = {}; var tEl = document.getElementById('projecttitle'); obj.mw_title = tEl ? this.mw_trim(tEl.value) : ''; obj.mw_mice = this.mw_mice; obj.mw_events = this.mw_events; return JSON.stringify(obj); },
+  from_json: function (json_data) { if (this.parent_class) { this.parent_class.from_json(json_data); } this.mw_load(json_data); this.mw_wire(); this.mw_renderAll(); },
+  test_data: function () { return JSON.stringify({ mw_mice: [], mw_events: [] }); },
+  is_valid: function (b) { return this.parent_class ? this.parent_class.is_valid(b) : true; },
+  is_edited: function () { return this.parent_class ? this.parent_class.is_edited() : false; },
+  reset_edited: function () { return this.parent_class ? this.parent_class.reset_edited() : true; }
+};
+</script>
+<!-- ============================================================ -->
+<!-- LOGGER JS — END                                              -->
+<!-- ============================================================ -->
+
+<!-- ===================== STANDALONE STORAGE LAYER ===================== -->
+<script>
+(function(){
+  var W = my_widget_script;
+  var dirHandle = null;          // chosen output folder (File System Access API)
+  var projHandle = null;         // current project subfolder handle
+  var currentProject = "";       // current project name
+  var dirty = false;
+  var hasFS = (typeof window.showDirectoryPicker === "function");
+
+  var $ = function(id){ return document.getElementById(id); };
+  function pmsg(t, err){ var e=$("projmsg"); e.textContent=t||""; e.style.color=err?"#c0392b":"#1e7a48"; if(t){ setTimeout(function(){ if($("projmsg"))$("projmsg").textContent=""; },4000); } }
+
+  // ---- dirty tracking (called from widget via window.MLmarkDirty) ----
+  window.MLmarkDirty = function(){ dirty = true; updateDirty(); };
+  function updateDirty(){
+    var n=$("dirtynote");
+    if(!currentProject){ n.textContent=""; return; }
+    n.textContent = dirty ? "● unsaved changes in \"" + currentProject + "\"" : "✓ saved: \"" + currentProject + "\"";
+    n.className = dirty ? "pnote dirty" : "pnote";
+  }
+  // also mark dirty when the project title or any field changes
+  document.addEventListener("input", function(e){
+    if(e.target && e.target.closest && e.target.closest(".mw-wrap")){ window.MLmarkDirty(); }
+  });
+
+  // ---- mode badge / notes ----
+  function setupMode(){
+    var b=$("modebadge"), note=$("modenote");
+    if(hasFS){
+      b.textContent="Folder mode"; b.className="badge on";
+      note.innerHTML = "Full folder mode (Chrome/Edge on desktop). Choose a folder once; projects are subfolders containing a CSV and a photos/ folder. Everything works offline.";
+    }else{
+      b.textContent="Download/Upload mode"; b.className="badge off";
+      note.innerHTML = "This browser (e.g. Safari or iPhone) can't manage folders directly. Create/Save will <b>download</b> a project ZIP-like CSV, and Load uses a file picker. Folder listing and auto-save aren't available here — for the full experience use Chrome or Edge on a computer.";
+      // Repurpose controls for fallback
+      $("chooseDirBtn").textContent = "Load CSV File…";
+      $("outpath").placeholder = "(folder management not available in this browser)";
+      $("projlist").innerHTML = '<option value="">(not available here)</option>';
+      $("projlist").disabled = true; $("loadBtn").disabled = true;
+    }
+  }
+
+  // ---- helpers ----
+  function safeName(s){ return String(s||"").replace(/[^a-zA-Z0-9_\- ]/g,"_").replace(/\s+/g,"_"); }
+  function getTitle(){ var t=$("projecttitle"); return t ? t.value.trim() : ""; }
+  function setTitle(v){ var t=$("projecttitle"); if(t){ t.value=v; } }
+
+  // Convert a data URL to a Blob (for saving photos as real image files)
+  function dataURLtoBlob(dataUrl){
+    var parts=dataUrl.split(","); var mime=parts[0].match(/:(.*?);/)[1];
+    var bin=atob(parts[1]); var n=bin.length; var u8=new Uint8Array(n);
+    while(n--){ u8[n]=bin.charCodeAt(n); } return new Blob([u8],{type:mime});
+  }
+
+  // =================== FOLDER MODE (Chrome/Edge) ===================
+  async function chooseDir(){
+    if(!hasFS){ return fallbackLoadFile(); }
+    try{
+      dirHandle = await window.showDirectoryPicker({ mode:"readwrite" });
+      $("outpath").value = dirHandle.name + "  (selected folder)";
+      await refreshProjectList();
+      pmsg("Folder selected.");
+    }catch(e){ /* user cancelled */ }
+  }
+
+  async function refreshProjectList(){
+    var sel=$("projlist"); sel.innerHTML="";
+    if(!dirHandle){ sel.innerHTML='<option value="">(choose folder first)</option>'; return; }
+    var names=[];
+    for await (var entry of dirHandle.values()){ if(entry.kind==="directory"){ names.push(entry.name); } }
+    names.sort();
+    if(!names.length){ sel.innerHTML='<option value="">(no projects yet)</option>'; return; }
+    sel.innerHTML='<option value="">-- choose a project --</option>';
+    names.forEach(function(n){ var o=document.createElement("option"); o.value=n; o.textContent=n; sel.appendChild(o); });
+  }
+
+  async function createProject(){
+    var name = $("projname").value.trim() || getTitle();
+    if(!name){ pmsg("Enter a project name first.", true); return; }
+    if(!hasFS){ // fallback: just set the title, saving happens on Save
+      setTitle(name); currentProject=name; dirty=true; updateDirty();
+      pmsg("Project name set. Use Save to download the CSV."); return;
+    }
+    if(!dirHandle){ pmsg("Choose an output folder first.", true); return; }
+    var folder = safeName(name);
+    try{
+      // getDirectoryHandle with create:true makes the folder if absent
+      projHandle = await dirHandle.getDirectoryHandle(folder, { create:true });
+      currentProject = name;
+      setTitle(name);
+      await refreshProjectList();
+      $("projlist").value = folder;
+      dirty=true; updateDirty();
+      pmsg('Project "' + name + '" created. Add data, then Save.');
+    }catch(e){ pmsg("Could not create project folder: " + e.message, true); }
+  }
+
+  async function loadProject(){
+    if(!hasFS){ return fallbackLoadFile(); }
+    if(!dirHandle){ pmsg("Choose an output folder first.", true); return; }
+    var folder = $("projlist").value;
+    if(!folder){ pmsg("Pick a project to load.", true); return; }
+    try{
+      projHandle = await dirHandle.getDirectoryHandle(folder, { create:false });
+      // read <folder>.csv (fall back to any .csv in the folder)
+      var csvText = await readProjectCsv(projHandle, folder);
+      if(csvText === null){ pmsg("No CSV found in that project.", true); return; }
+      importCsvIntoWidget(csvText);
+      currentProject = folder;
+      setTitle(folder);
+      dirty=false; updateDirty();
+      pmsg('Loaded "' + folder + '".');
+    }catch(e){ pmsg("Could not load project: " + e.message, true); }
+  }
+
+  async function readProjectCsv(folderHandle, folderName){
+    var target = safeName(folderName) + ".csv";
+    var fallback = null;
+    for await (var entry of folderHandle.values()){
+      if(entry.kind==="file" && /\.csv$/i.test(entry.name)){
+        if(entry.name === target){ var f=await entry.getFile(); return await f.text(); }
+        fallback = entry;
+      }
+    }
+    if(fallback){ var f2=await fallback.getFile(); return await f2.text(); }
+    return null;
+  }
+
+  // Load a CSV string into the widget by reusing its own import logic,
+  // but replacing data (not merging) so a loaded project is clean.
+  function importCsvIntoWidget(csvText){
+    W.mw_mice = []; W.mw_events = [];
+    var box=$("importbox"); var prevDupM=W.mw_getRadio("dupmouse"), prevDupE=W.mw_getRadio("dupevent");
+    box.value = csvText;
+    W.mw_importCsv();
+    box.value = "";
+    W.mw_msg("importmsg","",false);
+  }
+
+  async function writeFile(folderHandle, filename, contents){
+    var fh = await folderHandle.getFileHandle(filename, { create:true });
+    var ws = await fh.createWritable();
+    await ws.write(contents);
+    await ws.close();
+  }
+
+  // Save photos as separate files in <project>/photos/, and rewrite the
+  // CSV to reference filenames. Returns the CSV text with a Photos column.
+  async function savePhotosAndBuildCsv(folderHandle){
+    var photosDir = await folderHandle.getDirectoryHandle("photos", { create:true });
+    // Give every event's photos filenames and write them out.
+    var count=0;
+    for(var i=0;i<W.mw_events.length;i++){
+      var ev=W.mw_events[i]; ev.photoFiles = [];
+      if(ev.photos && ev.photos.length){
+        for(var p=0;p<ev.photos.length;p++){
+          var fname = safeName(currentProject) + "_ev" + (i+1) + "_" + (p+1) + ".jpg";
+          try{ await writeFile(photosDir, fname, dataURLtoBlob(ev.photos[p])); ev.photoFiles.push("photos/"+fname); count++; }
+          catch(e){ /* skip a failed image */ }
+        }
+      }
+    }
+    return count;
+  }
+
+  async function saveProject(asNew){
+    if(!hasFS){ return fallbackSave(); }
+    if(!dirHandle){ pmsg("Choose an output folder first.", true); return; }
+
+    var name = getTitle() || currentProject || $("projname").value.trim();
+    if(!name){ pmsg("Set a project title first.", true); return; }
+
+    if(asNew){
+      // Save As: if the folder already exists, require a different name
+      var folder = safeName(name);
+      var exists = false;
+      try{ await dirHandle.getDirectoryHandle(folder, { create:false }); exists = true; }catch(e){ exists = false; }
+      if(exists){
+        var newName = window.prompt('A project named "'+name+'" already exists. Enter a new name:', name + "_copy");
+        if(!newName){ pmsg("Save As cancelled.", true); return; }
+        name = newName.trim(); setTitle(name);
+      }
+      projHandle = await dirHandle.getDirectoryHandle(safeName(name), { create:true });
+      currentProject = name;
+    }else{
+      // Save (overwrite): need a current project folder
+      if(!projHandle){
+        // create from title if none loaded yet
+        projHandle = await dirHandle.getDirectoryHandle(safeName(name), { create:true });
+      }
+      currentProject = name;
+    }
+
+    try{
+      var nPhotos = await savePhotosAndBuildCsv(projHandle);
+      var csv = W.mw_buildCsv();
+      await writeFile(projHandle, safeName(currentProject) + ".csv", csv);
+      // Also store a JSON copy so photos/collapsed state survive reloads
+      await writeFile(projHandle, safeName(currentProject) + ".json", W.to_json());
+      await refreshProjectList();
+      $("projlist").value = safeName(currentProject);
+      dirty=false; updateDirty();
+      pmsg('Saved "' + currentProject + '" (' + nPhotos + ' photo file(s)).');
+    }catch(e){ pmsg("Save failed: " + e.message, true); }
+  }
+
+  // =================== FALLBACK MODE (Safari/iPhone) ===================
+  function fallbackSave(){
+    var name = getTitle() || $("projname").value.trim() || "project";
+    var csv = W.mw_buildCsv();
+    var blob = new Blob([csv], { type:"text/csv" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = safeName(name) + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    dirty=false; currentProject=name; updateDirty();
+    pmsg('Downloaded "' + safeName(name) + '.csv". (Photos aren\'t exported in this browser.)');
+  }
+  function fallbackLoadFile(){
+    var inp = document.createElement("input"); inp.type="file"; inp.accept=".csv,text/csv";
+    inp.onchange = function(){
+      var f = inp.files[0]; if(!f) return;
+      var reader = new FileReader();
+      reader.onload = function(){ importCsvIntoWidget(String(reader.result)); var nm=f.name.replace(/\.csv$/i,""); currentProject=nm; setTitle(nm); dirty=false; updateDirty(); pmsg('Loaded "' + nm + '".'); };
+      reader.readAsText(f);
+    };
+    inp.click();
+  }
+
+  // ---- wire the shell buttons ----
+  $("chooseDirBtn").addEventListener("click", chooseDir);
+  $("createBtn").addEventListener("click", createProject);
+  $("loadBtn").addEventListener("click", loadProject);
+  $("saveBtn").addEventListener("click", function(){ saveProject(false); });
+  $("saveAsBtn").addEventListener("click", function(){ saveProject(true); });
+
+  // warn before closing with unsaved changes
+  window.addEventListener("beforeunload", function(e){ if(dirty){ e.preventDefault(); e.returnValue=""; } });
+
+  // ---- boot the widget (no LabArchives here) ----
+  setupMode();
+  W.init("edit", "");
+  updateDirty();
+})();
+</script>
+
+</body>
+</html>
