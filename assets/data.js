@@ -24,7 +24,7 @@ const PROJECT_OPTIONS = {
 
   // If non-empty, ONLY these repos are shown (a whitelist). Leave empty to
   // show everything except hideRepos. Names are exact, case-insensitive.
-  onlyRepos: ["FED3_ZY", "iMOSS","FST_FP_synchronization"]
+  onlyRepos: ["FED3_ZY", "iMOSS","FST_FP_synchronization","ZY_EthovisionIO"]
 };
 
 /* --- Documentation pages (always manual) ---
