@@ -617,22 +617,88 @@ my_widget_script =
 
   async function chooseDir(){ if(!hasFS){return fallbackLoadFile();} try{ dirHandle=await window.showDirectoryPicker({mode:"readwrite"}); $("outpath").value=dirHandle.name+"  (selected folder)"; await refreshProjectList(); pmsg("Folder selected."); }catch(e){} }
   async function refreshProjectList(){ var sel=$("projlist"); sel.innerHTML=""; if(!dirHandle){sel.innerHTML='<option value="">(choose folder first)</option>';return;} var names=[]; for await (var entry of dirHandle.values()){if(entry.kind==="directory"){names.push(entry.name);}} names.sort(); if(!names.length){sel.innerHTML='<option value="">(no projects yet)</option>';return;} sel.innerHTML='<option value="">-- choose a project --</option>'; names.forEach(function(n){var o=document.createElement("option");o.value=n;o.textContent=n;sel.appendChild(o);}); }
+  // Reset the widget to an empty project (clears mice, events, staging, form).
+  function resetWidgetData(){
+    W.mw_mice = []; W.mw_events = [];
+    W.mw_editId = null; W.mw_editEventIdx = null;
+    W.mw_stagePhotos = []; W.mw_stagePerMouse = {}; W.mw_stagePerMousePhotos = {};
+    W.mw_collapsed = {}; W.mw_rosterCollapsed = false;
+    W.mw_renderAll();
+    W.mw_clearMouse();
+    W.mw_clearEvent();
+  }
+
   async function createProject(){
     var name=$("projname").value.trim()||getTitle(); if(!name){pmsg("Enter a project name first.",true);return;}
-    if(!hasFS){ setTitle(name); currentProject=name; dirty=true; updateDirty(); pmsg("Project name set. Use Save to download the CSV."); return; }
+
+    // 2. Warn about unsaved changes in the project currently open
+    if(dirty && currentProject){
+      var proceed = window.confirm('You have unsaved changes in "'+currentProject+'".\n\nClick OK to discard them and start the new project, or Cancel to go back and Save first.');
+      if(!proceed){ pmsg("Create cancelled — Save your current project first.", true); return; }
+    }
+
+    if(!hasFS){
+      // Fallback (Safari/iPhone): no folder existence check possible.
+      resetWidgetData();
+      setTitle(name); currentProject=name; projHandle=null; dirty=true; updateDirty();
+      pmsg('New project "'+name+'" started. Use Save to download its CSV.'); 
+      $("projname").value="";
+      return;
+    }
+
     if(!dirHandle){pmsg("Choose an output folder first.",true);return;}
-    try{ projHandle=await dirHandle.getDirectoryHandle(safeName(name),{create:true}); currentProject=name; setTitle(name); await refreshProjectList(); $("projlist").value=safeName(name); dirty=true; updateDirty(); pmsg('Project "'+name+'" created. Add data, then Save.'); }catch(e){pmsg("Could not create project folder: "+e.message,true);}
+
+    // 1. Check whether a project folder with this name already exists
+    var folder = safeName(name);
+    var exists = false;
+    try{ await dirHandle.getDirectoryHandle(folder, {create:false}); exists = true; }catch(e){ exists = false; }
+    if(exists){
+      pmsg('A project named "'+name+'" already exists. Load it instead, or choose a different name.', true);
+      return;
+    }
+
+    try{
+      // 3. Clear the previous project's data, then start the new one clean
+      resetWidgetData();
+      projHandle=await dirHandle.getDirectoryHandle(folder,{create:true});
+      currentProject=name; setTitle(name);
+      await refreshProjectList(); $("projlist").value=folder;
+      dirty=true; updateDirty();
+      $("projname").value="";
+      pmsg('Project "'+name+'" created (empty). Add data, then Save.');
+    }catch(e){pmsg("Could not create project folder: "+e.message,true);}
   }
   async function loadProject(){
     if(!hasFS){return fallbackLoadFile();} if(!dirHandle){pmsg("Choose an output folder first.",true);return;}
     var folder=$("projlist").value; if(!folder){pmsg("Pick a project to load.",true);return;}
+
+    // Warn about unsaved changes in the project currently open
+    if(dirty && currentProject && currentProject !== folder){
+      var proceed = window.confirm('You have unsaved changes in "'+currentProject+'".\n\nClick OK to discard them and load "'+folder+'", or Cancel to go back and Save first.');
+      if(!proceed){ pmsg("Load cancelled — Save your current project first.", true); return; }
+    }
+
     try{
       projHandle=await dirHandle.getDirectoryHandle(folder,{create:false});
       // prefer JSON (keeps photos) then CSV
       var jsonText=await readProjectFile(projHandle, safeName(folder)+".json");
-      if(jsonText!==null){ W.mw_load(jsonText); W.mw_wire(); W.mw_renderAll(); }
-      else { var csvText=await readProjectCsv(projHandle, folder); if(csvText===null){pmsg("No data file found in that project.",true);return;} importCsvIntoWidget(csvText); }
-      currentProject=folder; setTitle(folder); dirty=false; updateDirty(); pmsg('Loaded "'+folder+'".');
+      if(jsonText!==null){
+        W.mw_load(jsonText); W.mw_wire(); W.mw_renderAll();
+      } else {
+        var csvText=await readProjectCsv(projHandle, folder);
+        if(csvText===null){
+          // Empty project (folder exists but no data file yet): treat like
+          // opening a fresh project with this name and ensure structure.
+          resetWidgetData();
+          setTitle(folder);
+        } else {
+          importCsvIntoWidget(csvText);
+        }
+      }
+      // If the loaded project has no title yet, use the folder name.
+      if(!getTitle()){ setTitle(folder); }
+      currentProject=folder; dirty=false; updateDirty();
+      pmsg('Loaded "'+folder+'".');
     }catch(e){pmsg("Could not load project: "+e.message,true);}
   }
   async function readProjectFile(folderHandle, filename){ try{ var fh=await folderHandle.getFileHandle(filename,{create:false}); var f=await fh.getFile(); return await f.text(); }catch(e){ return null; } }
@@ -667,7 +733,14 @@ my_widget_script =
   }
 
   function fallbackSave(){ var name=getTitle()||$("projname").value.trim()||"project"; var csv=W.mw_buildCsv(); var blob=new Blob([csv],{type:"text/csv"}); var url=URL.createObjectURL(blob); var a=document.createElement("a"); a.href=url; a.download=safeName(name)+".csv"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); dirty=false; currentProject=name; updateDirty(); pmsg('Downloaded "'+safeName(name)+'.csv". (Photos aren\'t exported in this browser.)'); }
-  function fallbackLoadFile(){ var inp=document.createElement("input"); inp.type="file"; inp.accept=".csv,text/csv"; inp.onchange=function(){var f=inp.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(){importCsvIntoWidget(String(reader.result));var nm=f.name.replace(/\.csv$/i,"");currentProject=nm;setTitle(nm);dirty=false;updateDirty();pmsg('Loaded "'+nm+'".');};reader.readAsText(f);}; inp.click(); }
+  function fallbackLoadFile(){
+    // Warn about unsaved changes before replacing the current project
+    if(dirty && currentProject){
+      var proceed = window.confirm('You have unsaved changes in "'+currentProject+'".\n\nClick OK to discard them and load a file, or Cancel to go back and Save first.');
+      if(!proceed){ pmsg("Load cancelled — Save your current project first.", true); return; }
+    }
+    var inp=document.createElement("input"); inp.type="file"; inp.accept=".csv,text/csv"; inp.onchange=function(){var f=inp.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(){importCsvIntoWidget(String(reader.result));var nm=f.name.replace(/\.csv$/i,"");currentProject=nm;setTitle(nm);dirty=false;updateDirty();pmsg('Loaded "'+nm+'".');};reader.readAsText(f);}; inp.click();
+  }
 
   $("chooseDirBtn").addEventListener("click", chooseDir);
   $("createBtn").addEventListener("click", createProject);
