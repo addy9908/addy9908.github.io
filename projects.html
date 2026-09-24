@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — Your Name</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .pgrid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-top:24px}
+  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;
+    box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .pcard h3{margin:0 0 6px;font-size:1.15rem}
+  .pcard .blurb{color:var(--muted);font-size:.92rem;flex:1;margin-bottom:14px}
+  .pcard .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .pbtn{font-size:.85rem;font-weight:600;padding:8px 14px;border-radius:8px;text-decoration:none;
+    display:inline-block;border:1px solid var(--line)}
+  .pbtn:hover{text-decoration:none}
+  .pbtn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .pbtn.primary:hover{background:var(--brand-2)}
+  .pbtn.ghost{background:var(--code);color:var(--ink)}
+  .pbtn.ghost:hover{background:#e6eaf0}
+  .tags{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+  .ptag{font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;color:var(--brand-2);
+    background:#eaf1fd;border-radius:999px;padding:2px 9px}
+  .empty{color:var(--muted);margin-top:20px}
+</style>
+</head>
+<body data-root="">
+<main class="container">
+  <a class="backlink" href="index.html">&larr; Back to home</a>
+  <h1>Projects</h1>
+  <p class="note">Open-source tools and research software. Each project links to a detailed write-up,
+     its code on GitHub, and/or a live tool you can use right in the browser.</p>
+
+  <div id="pgrid" class="pgrid"></div>
+</main>
+
+<footer class="container">
+  &copy; <span id="year"></span> Your Name
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+(function(){
+  function esc(s){ return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  var grid = document.getElementById("pgrid");
+  var list = window.DOCS || [];
+
+  if(!list.length){
+    grid.innerHTML = '<p class="empty">No projects listed yet. Add entries to the DOCS list in assets/data.js.</p>';
+  } else {
+    grid.innerHTML = list.map(function(p){
+      var tags = [];
+      if(p.docPage) tags.push("write-up");
+      if(p.repo) tags.push("open source");
+      if(p.live) tags.push("live tool");
+
+      var btns = "";
+      if(p.docPage) btns += '<a class="pbtn primary" href="'+esc(p.docPage)+'">Read more</a>';
+      if(p.live)    btns += '<a class="pbtn ghost" href="'+esc(p.live)+'">Open tool</a>';
+      if(p.repo)    btns += '<a class="pbtn ghost" href="'+esc(p.repo)+'" target="_blank" rel="noopener">GitHub &#8599;</a>';
+
+      var tagHtml = tags.length
+        ? '<div class="tags">'+tags.map(function(t){return '<span class="ptag">'+esc(t)+'</span>';}).join("")+'</div>'
+        : '';
+
+      return '<div class="pcard">' +
+               '<h3>'+esc(p.title)+'</h3>' +
+               (tagHtml) +
+               '<div class="blurb">'+esc(p.blurb||"")+'</div>' +
+               '<div class="actions">'+btns+'</div>' +
+             '</div>';
+    }).join("");
+  }
+
+  var y = document.getElementById("year"); if(y){ y.textContent = new Date().getFullYear(); }
+})();
+</script>
+</body>
+</html>
