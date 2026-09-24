@@ -46,12 +46,12 @@ const DOCS = [
 	},
   {
   repo: "labarchives-widget",
-  title: "Mouse Lifespan Event Log",
+  title: "Mouse Logger-Widget",
   docPage: "projects/labarchives-plugin.html"
     },
   {
   repo: "Mouse Lifespan Event Logger - Standalone",
-  title: "Mouse Lifespan Event Logger",
+  title: "Mouse Logger-standalone",
   docPage: "projects/Mouse_Lifespan_Event_Logger.html"
     }
 ];
