@@ -35,7 +35,7 @@ const DOCS = [
   },
   {
     title: "Mouse Lifespan Event Logger",
-    blurb: "LabArchives widget and standalone app for logging a mouse's full experimental history.",
+    blurb: "LabArchives widget (click readmore for widget code) and standalone app for logging a mouse's full experimental history.",
     docPage: "projects/labarchives-plugin.html",
     repo: "",
     live: "projects/Mouse_Lifespan_Event_Logger.html"
@@ -45,6 +45,13 @@ const DOCS = [
     blurb: "Monitoring 12 FED3-integrated cages at the same time 24/7",
     docPage: "",         
     repo: "https://github.com/addy9908/FED3_ZY", 
+    live: ""  
+  },
+  {
+    title: "DIY Arduino Uno as Ethovision IO box",
+    blurb: "ZY_EthovisionIO provides EthoVision-controlled Arduino I/O for a single behavioral chamber",
+    docPage: "",         
+    repo: "https://github.com/addy9908/ZY_EthovisionIO", 
     live: ""  
   }
 ];
