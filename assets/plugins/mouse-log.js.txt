@@ -1129,6 +1129,7 @@ my_widget_script =
     bind('collapseallbtn', function () { self.mw_collapseAll(true); });
     bind('expandallbtn', function () { self.mw_collapseAll(false); });
     bind('rosterhdr', function () { self.mw_toggleRoster(); });
+    bind('downloadzipbtn', function () { self.mw_downloadZip(); });
 
     var fsel = document.getElementById('filtermouse');
     if (fsel && !fsel.getAttribute('data-mw')) { fsel.setAttribute('data-mw', '1'); fsel.addEventListener('change', function () { self.mw_renderLog(); }); }
@@ -1207,5 +1208,201 @@ my_widget_script =
   test_data: function () { return JSON.stringify({ mw_mice: [], mw_events: [] }); },
   is_valid: function (b) { return this.parent_class ? this.parent_class.is_valid(b) : true; },
   is_edited: function () { return this.parent_class ? this.parent_class.is_edited() : false; },
-  reset_edited: function () { return this.parent_class ? this.parent_class.reset_edited() : true; }
+  reset_edited: function () { return this.parent_class ? this.parent_class.reset_edited() : true; },
+
+
+  // ----- filename helpers: zip -----
+  mw_zipSafeName: function (s) {
+    return String(s || '').replace(/[^a-zA-Z0-9_\- ]/g, '_').replace(/\s+/g, '_');
+  },
+
+  mw_projectName: function () {
+    var t = document.getElementById('projecttitle');
+    var v = t ? this.mw_trim(t.value) : '';
+    return v ? v : 'MouseLog';
+  },
+
+  // ----- CRC32 (needed by the ZIP format) -----
+  mw_crc32: function (bytes) {
+    var c;
+    if (!this._crcTable) {
+      this._crcTable = [];
+      var n, k;
+      for (n = 0; n < 256; n++) {
+        c = n;
+        for (k = 0; k < 8; k++) { c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); }
+        this._crcTable[n] = c >>> 0;
+      }
+    }
+    var crc = 0xFFFFFFFF;
+    var i;
+    for (i = 0; i < bytes.length; i++) {
+      crc = (crc >>> 8) ^ this._crcTable[(crc ^ bytes[i]) & 0xFF];
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  },
+
+  // ----- encoders -----
+  mw_strToBytes: function (str) {
+    // UTF-8 encode
+    var utf8 = unescape(encodeURIComponent(str));
+    var arr = new Uint8Array(utf8.length);
+    var i;
+    for (i = 0; i < utf8.length; i++) { arr[i] = utf8.charCodeAt(i) & 0xFF; }
+    return arr;
+  },
+
+  mw_dataUrlToBytes: function (dataUrl) {
+    var comma = dataUrl.indexOf(',');
+    var b64 = dataUrl.substring(comma + 1);
+    var bin = atob(b64);
+    var n = bin.length;
+    var arr = new Uint8Array(n);
+    var i;
+    for (i = 0; i < n; i++) { arr[i] = bin.charCodeAt(i); }
+    return arr;
+  },
+
+  // ----- minimal STORE-only ZIP builder -----
+  // files = [{ name: "path/in/zip", bytes: Uint8Array }]
+  mw_buildZip: function (files) {
+    var self = this;
+    var chunks = [];       // array of Uint8Array to concatenate
+    var central = [];      // central directory records
+    var offset = 0;
+
+    function u16(n) { return new Uint8Array([n & 0xFF, (n >>> 8) & 0xFF]); }
+    function u32(n) { return new Uint8Array([n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF]); }
+    function push(arr) { chunks.push(arr); offset += arr.length; }
+    function concat(list) {
+      var total = 0, i;
+      for (i = 0; i < list.length; i++) { total += list[i].length; }
+      var out = new Uint8Array(total);
+      var pos = 0;
+      for (i = 0; i < list.length; i++) { out.set(list[i], pos); pos += list[i].length; }
+      return out;
+    }
+
+    var i;
+    for (i = 0; i < files.length; i++) {
+      var nameBytes = self.mw_strToBytes(files[i].name);
+      var data = files[i].bytes;
+      var crc = self.mw_crc32(data);
+      var localOffset = offset;
+
+      // ---- local file header ----
+      push(u32(0x04034b50));        // local file header signature
+      push(u16(20));                // version needed
+      push(u16(0));                 // flags
+      push(u16(0));                 // compression = 0 (STORE)
+      push(u16(0));                 // mod time
+      push(u16(0));                 // mod date
+      push(u32(crc));               // crc32
+      push(u32(data.length));       // compressed size
+      push(u32(data.length));       // uncompressed size
+      push(u16(nameBytes.length));  // filename length
+      push(u16(0));                 // extra length
+      push(nameBytes);              // filename
+      push(data);                   // file data
+
+      // ---- central directory record (saved for later) ----
+      var cd = [];
+      cd.push(u32(0x02014b50));     // central dir signature
+      cd.push(u16(20));             // version made by
+      cd.push(u16(20));             // version needed
+      cd.push(u16(0));              // flags
+      cd.push(u16(0));              // compression
+      cd.push(u16(0));              // mod time
+      cd.push(u16(0));              // mod date
+      cd.push(u32(crc));            // crc32
+      cd.push(u32(data.length));    // compressed size
+      cd.push(u32(data.length));    // uncompressed size
+      cd.push(u16(nameBytes.length));
+      cd.push(u16(0));              // extra length
+      cd.push(u16(0));              // comment length
+      cd.push(u16(0));              // disk number
+      cd.push(u16(0));              // internal attrs
+      cd.push(u32(0));              // external attrs
+      cd.push(u32(localOffset));    // offset of local header
+      cd.push(nameBytes);
+      central.push({ bytes: concat(cd) });
+    }
+
+    // ---- write central directory ----
+    var cdStart = offset;
+    var cdBytes = [];
+    for (i = 0; i < central.length; i++) { push(central[i].bytes); cdBytes.push(central[i].bytes); }
+    var cdSize = offset - cdStart;
+
+    // ---- end of central directory ----
+    push(u32(0x06054b50));          // EOCD signature
+    push(u16(0));                   // disk number
+    push(u16(0));                   // disk with CD
+    push(u16(files.length));        // entries on this disk
+    push(u16(files.length));        // total entries
+    push(u32(cdSize));              // CD size
+    push(u32(cdStart));             // CD offset
+    push(u16(0));                   // comment length
+
+    return concat(chunks);
+  },
+
+  // ----- assemble the project's files and trigger the download -----
+  mw_downloadZip: function () {
+    var proj = this.mw_projectName();
+    var safe = this.mw_zipSafeName(proj);
+    var root = safe + '/';           // nested folder inside the zip
+    var files = [];
+
+    // 1) JSON (full state incl. photos) — the reload file
+    files.push({ name: root + safe + '.json', bytes: this.mw_strToBytes(this.to_json()) });
+
+    // 2) CSV (text copy)
+    files.push({ name: root + safe + '.csv', bytes: this.mw_strToBytes(this.mw_buildCsv()) });
+
+    // 3) photos/ — shared + per-mouse, same naming as the standalone
+    var i;
+    var photoCount = 0;
+    for (i = 0; i < this.mw_events.length; i++) {
+      var ev = this.mw_events[i];
+      var base = safe + '_ev' + (i + 1);
+      if (ev.photos && ev.photos.length) {
+        var p;
+        for (p = 0; p < ev.photos.length; p++) {
+          files.push({ name: root + 'photos/' + base + '_shared_' + (p + 1) + '.jpg',
+                       bytes: this.mw_dataUrlToBytes(ev.photos[p]) });
+          photoCount++;
+        }
+      }
+      if (ev.perMousePhotos) {
+        var mid;
+        for (mid in ev.perMousePhotos) {
+          if (!ev.perMousePhotos.hasOwnProperty(mid)) { continue; }
+          var arr = ev.perMousePhotos[mid] || [];
+          var q;
+          for (q = 0; q < arr.length; q++) {
+            files.push({ name: root + 'photos/' + base + '_' + this.mw_zipSafeName(mid) + '_' + (q + 1) + '.jpg',
+                         bytes: this.mw_dataUrlToBytes(arr[q]) });
+            photoCount++;
+          }
+        }
+      }
+    }
+
+    try {
+      var zipBytes = this.mw_buildZip(files);
+      var blob = new Blob([zipBytes], { type: 'application/zip' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = safe + '.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.mw_msg('exportmsg', 'ZIP downloaded (' + photoCount + ' photo file(s)).', false);
+    } catch (err) {
+      this.mw_msg('exportmsg', 'ZIP download failed here: ' + err.message, true);
+    }
+  }
 }

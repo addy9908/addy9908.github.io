@@ -244,6 +244,7 @@
     <div class="mw-bar">
       <button type="button" class="mw-btn sec" id="copyexportbtn">Copy to Clipboard</button>
       <button type="button" class="mw-btn sec" id="downloadexportbtn">Try Download</button>
+      <button type="button" class="mw-btn sec" id="downloadzipbtn">Download ZIP (CSV + photos)</button>
       <span class="mw-msg" id="exportmsg"></span>
     </div>
   </div>
