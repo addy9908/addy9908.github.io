@@ -1,5 +1,10 @@
 [
   {
+    "title": "Ethovision Laser control",
+    "url": "https://noldus.com/shared/resources/book/mynoldus-knowledge-base/chapter/related-to-ethovision-xt/page/connecting-an-optogenetics-laser-to-be-controlled-by-ethovision-xt",
+    "category": "Lab Resources",
+    "desc": "Learn the idea of trial control with Ethovision"
+  },{
     "title": "PubMed",
     "url": "https://pubmed.ncbi.nlm.nih.gov/",
     "category": "Databases",
