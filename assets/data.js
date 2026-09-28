@@ -49,7 +49,7 @@ const DOCS = [
   },
   {
     title: "DIY Arduino Uno as Ethovision IO box",
-    blurb: "ZY_EthovisionIO provides EthoVision-controlled Arduino I/O for a single behavioral chamber",
+    blurb: "ZY_PinBridge provides EthoVision-controlled Arduino I/O for a single behavioral chamber",
     docPage: "",         
     repo: "https://github.com/addy9908/ZY_EthovisionIO", 
     live: ""  
