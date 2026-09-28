@@ -28,6 +28,8 @@
   .mw-checks label { display:block; font-size:12px; font-weight:normal; color:#23303c; margin:2px 0; }
   .mw-checks input { width:auto; margin-right:6px; }
   .mw-grouphdr { background:#eef2f6; font-weight:bold; color:#1f5578; }
+  .mw-inactive td { color:#9aa5b1 !important; background:#fafbfc; }
+  .mw-inactive-tag { display:inline-block; font-size:9px; font-weight:bold; text-transform:uppercase; letter-spacing:.03em; color:#8a6d00; background:#fdf1cc; border-radius:999px; padding:1px 6px; margin-left:5px; vertical-align:middle; }
   .mw-bar { margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .mw-thumb { position:relative; display:inline-block; }
   .mw-thumb img { width:56px; height:56px; object-fit:cover; border:1px solid #d9dee6; border-radius:4px; cursor:pointer; display:block; }
@@ -122,6 +124,7 @@
   <h3 id="rosterhdr" style="cursor:pointer;">
     <span id="rostertoggle">&#9662;</span> Mouse Roster <span id="rostercount" style="font-weight:normal;text-transform:none;color:#6b7885;"></span>
   </h3>
+  <div class="mw-note" style="margin-top:0;margin-bottom:4px;">Deactivate a mouse when its lifespan ends: it stays in the roster and log, but is hidden from the event checklist below. Reactivate it anytime to add a missing event.</div>
   <table class="mw-table" id="rostertable">
     <thead>
       <tr>
@@ -223,7 +226,7 @@
       <tr><td colspan="5" style="text-align:center;color:#6b7885;font-style:italic;">No events logged yet.</td></tr>
     </tbody>
   </table>
-  <div class="mw-note">Events are grouped by mouse. Use the filter to view a single animal. Age is auto-calculated from DOB. Each mouse's row shows shared photos plus its own per-mouse photos.</div>
+  <div class="mw-note">Events are grouped by mouse. Use the filter to view a single animal (including inactive ones). Age is auto-calculated from DOB. Each mouse's row shows shared photos plus its own per-mouse photos.</div>
 
   <!-- ================= DATA EXCHANGE ZONE ================= -->
   <div class="mw-band">
@@ -244,7 +247,6 @@
     <div class="mw-bar">
       <button type="button" class="mw-btn sec" id="copyexportbtn">Copy to Clipboard</button>
       <button type="button" class="mw-btn sec" id="downloadexportbtn">Try Download</button>
-      <button type="button" class="mw-btn sec" id="downloadzipbtn">Download ZIP (CSV + photos)</button>
       <span class="mw-msg" id="exportmsg"></span>
     </div>
   </div>

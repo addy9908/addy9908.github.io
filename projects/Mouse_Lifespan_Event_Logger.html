@@ -34,7 +34,7 @@
 
   <!-- ===================== PROJECT / STORAGE BAR ===================== -->
   <div class="panel">
-    <h2>Storage &amp; Projects<span id="modebadge" class="badge off">detecting…</span></h2>
+    <h2>Storage &amp; Projects <span id="modebadge" class="badge off">detecting…</span></h2>
     <div class="prow">
       <div class="pfield">
         <label>Output location</label>
@@ -90,6 +90,8 @@
   .mw-checks label { display:block; font-size:12px; font-weight:normal; color:#23303c; margin:2px 0; }
   .mw-checks input { width:auto; margin-right:6px; }
   .mw-grouphdr { background:#eef2f6; font-weight:bold; color:#1f5578; }
+  .mw-inactive td { color:#9aa5b1 !important; background:#fafbfc; }
+  .mw-inactive-tag { display:inline-block; font-size:9px; font-weight:bold; text-transform:uppercase; letter-spacing:.03em; color:#8a6d00; background:#fdf1cc; border-radius:999px; padding:1px 6px; margin-left:5px; vertical-align:middle; }
   .mw-bar { margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .mw-thumb { position:relative; display:inline-block; }
   .mw-thumb img { width:56px; height:56px; object-fit:cover; border:1px solid #d9dee6; border-radius:4px; cursor:pointer; display:block; }
@@ -137,6 +139,7 @@
   </div>
 
   <h3 id="rosterhdr" style="cursor:pointer;"><span id="rostertoggle">&#9662;</span> Mouse Roster <span id="rostercount" style="font-weight:normal;text-transform:none;color:#6b7885;"></span></h3>
+  <div class="mw-note" style="margin-top:0;margin-bottom:4px;">Deactivate a mouse when its lifespan ends: it stays in the roster and log, but is hidden from the event checklist below. Reactivate it anytime to add a missing event.</div>
   <table class="mw-table" id="rostertable">
     <thead><tr><th style="width:90px;">Mouse ID</th><th style="width:70px;">Ear Tag</th><th style="width:60px;">Sex</th><th style="width:70px;">Cage</th><th style="width:70px;">Group</th><th style="width:90px;">DOB</th><th style="width:70px;">Age</th><th>Genotype</th><th style="width:70px;">Strain</th><th style="width:90px;">Actions</th></tr></thead>
     <tbody id="rosterbody"><tr><td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.</td></tr></tbody>
@@ -246,15 +249,14 @@ my_widget_script =
     reader.onerror=function(){}; reader.readAsDataURL(file);
   },
 
-  mw_readMouseForm: function () { var m={}; m.id=this.mw_trim(document.getElementById('m_id').value); m.eartag=this.mw_trim(document.getElementById('m_eartag').value); m.sex=this.mw_selText('m_sex'); m.cage=this.mw_trim(document.getElementById('m_cage').value); m.group=this.mw_trim(document.getElementById('m_group').value); m.dob=this.mw_trim(document.getElementById('m_dob').value); m.strain=this.mw_trim(document.getElementById('m_strain').value); m.genotype=this.mw_trim(document.getElementById('m_genotypeother').value); return m; },
+  mw_readMouseForm: function () { var m={}; m.id=this.mw_trim(document.getElementById('m_id').value); m.eartag=this.mw_trim(document.getElementById('m_eartag').value); m.sex=this.mw_selText('m_sex'); m.cage=this.mw_trim(document.getElementById('m_cage').value); m.group=this.mw_trim(document.getElementById('m_group').value); m.dob=this.mw_trim(document.getElementById('m_dob').value); m.strain=this.mw_trim(document.getElementById('m_strain').value); m.genotype=this.mw_trim(document.getElementById('m_genotypeother').value); m.active=true; return m; },
   mw_addMouse: function () {
     var m=this.mw_readMouseForm(); if(!m.id){this.mw_msg('mousemsg','Mouse ID is required.',true);return;}
     if(this.mw_editId){
       var oldId=this.mw_editId;
       if(m.id!==oldId&&this.mw_findMouse(m.id)){this.mw_msg('mousemsg','That Mouse ID already exists.',true);return;}
       var target=this.mw_findMouse(oldId);
-      if(target){target.id=m.id;target.eartag=m.eartag;target.sex=m.sex;target.cage=m.cage;target.group=m.group;target.dob=m.dob;target.strain=m.strain;target.genotype=m.genotype;}
-      if(m.id!==oldId){ var k; for(k=0;k<this.mw_events.length;k++){ var ev=this.mw_events[k]; var n; for(n=0;n<ev.mice.length;n++){ if(ev.mice[n]===oldId){ev.mice[n]=m.id;} } if(ev.perMouse&&ev.perMouse[oldId]!==undefined){ev.perMouse[m.id]=ev.perMouse[oldId];delete ev.perMouse[oldId];} if(ev.perMousePhotos&&ev.perMousePhotos[oldId]!==undefined){ev.perMousePhotos[m.id]=ev.perMousePhotos[oldId];delete ev.perMousePhotos[oldId];} } }
+      if(target){target.id=m.id;target.eartag=m.eartag;target.sex=m.sex;target.cage=m.cage;target.group=m.group;target.dob=m.dob;target.strain=m.strain;target.genotype=m.genotype;}      if(m.id!==oldId){ var k; for(k=0;k<this.mw_events.length;k++){ var ev=this.mw_events[k]; var n; for(n=0;n<ev.mice.length;n++){ if(ev.mice[n]===oldId){ev.mice[n]=m.id;} } if(ev.perMouse&&ev.perMouse[oldId]!==undefined){ev.perMouse[m.id]=ev.perMouse[oldId];delete ev.perMouse[oldId];} if(ev.perMousePhotos&&ev.perMousePhotos[oldId]!==undefined){ev.perMousePhotos[m.id]=ev.perMousePhotos[oldId];delete ev.perMousePhotos[oldId];} } }
       this.mw_endEdit(); this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls(); this.mw_renderFilter(); this.mw_renderLog();
       this.mw_msg('mousemsg','Mouse updated.',false); if(window.MLmarkDirty){window.MLmarkDirty();} return;
     }
@@ -290,20 +292,23 @@ my_widget_script =
     this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderGroupControls(); this.mw_renderFilter(); this.mw_renderLog();
     if(window.MLmarkDirty){window.MLmarkDirty();}
   },
+  mw_toggleActive: function (mid) { var m=this.mw_findMouse(mid); if(!m){return;} m.active=(m.active===false)?true:false; this.mw_renderRoster(); this.mw_renderMiceChecks(); this.mw_renderFilter(); this.mw_renderLog(); if(window.MLmarkDirty){window.MLmarkDirty();} },
   mw_renderRoster: function () {
     var self=this; var body=document.getElementById('rosterbody'); if(!body){return;}
     if(this.mw_mice.length===0){ body.innerHTML='<tr><td colspan="10" style="text-align:center;color:#6b7885;font-style:italic;">No mice registered yet.</td></tr>'; this.mw_applyRosterCollapse(); return; }
     var html=''; var i;
-    for(i=0;i<this.mw_mice.length;i++){ var m=this.mw_mice[i];
-      html+='<tr>';
-      html+='<td>'+this.mw_esc(m.id)+'</td>'; html+='<td>'+this.mw_esc(m.eartag)+'</td>'; html+='<td>'+this.mw_esc(m.sex)+'</td>';
+    for(i=0;i<this.mw_mice.length;i++){ var m=this.mw_mice[i]; var isInactive=(m.active===false); var rowCls=isInactive?' class="mw-inactive"':''; var idCell=this.mw_esc(m.id)+(isInactive?'<span class="mw-inactive-tag">inactive</span>':'');
+      html+='<tr'+rowCls+'>';
+      html+='<td>'+idCell+'</td>'; html+='<td>'+this.mw_esc(m.eartag)+'</td>'; html+='<td>'+this.mw_esc(m.sex)+'</td>';
       html+='<td>'+this.mw_esc(m.cage)+'</td>'; html+='<td>'+this.mw_esc(m.group||'')+'</td>'; html+='<td>'+this.mw_esc(m.dob)+'</td>';
       html+='<td>'+this.mw_esc(this.mw_ageStr(m.dob))+'</td>'; html+='<td>'+this.mw_esc(m.genotype)+'</td>'; html+='<td>'+this.mw_esc(m.strain)+'</td>';
-      html+='<td style="white-space:nowrap;"><button type="button" class="mw-btn sec mw-editmouse" data-id="'+this.mw_esc(m.id)+'" style="padding:2px 7px;margin-right:4px;">edit</button><button type="button" class="mw-btn sec mw-delmouse" data-id="'+this.mw_esc(m.id)+'" style="padding:2px 7px;">x</button></td>';
+      var toggleLabel=isInactive?'activate':'deactivate';
+      html+='<td style="white-space:nowrap;"><button type="button" class="mw-btn sec mw-editmouse" data-id="'+this.mw_esc(m.id)+'" style="padding:2px 7px;margin-right:4px;">edit</button><button type="button" class="mw-btn sec mw-togglemouse" data-id="'+this.mw_esc(m.id)+'" style="padding:2px 7px;margin-right:4px;">'+toggleLabel+'</button><button type="button" class="mw-btn sec mw-delmouse" data-id="'+this.mw_esc(m.id)+'" style="padding:2px 7px;">x</button></td>';
       html+='</tr>';
     }
     body.innerHTML=html;
     var edits=body.querySelectorAll('.mw-editmouse'); var q; for(q=0;q<edits.length;q++){edits[q].addEventListener('click',function(){self.mw_editMouse(this.getAttribute('data-id'));});}
+    var toggles=body.querySelectorAll('.mw-togglemouse'); var tg; for(tg=0;tg<toggles.length;tg++){toggles[tg].addEventListener('click',function(){self.mw_toggleActive(this.getAttribute('data-id'));});}
     var dels=body.querySelectorAll('.mw-delmouse'); var j; for(j=0;j<dels.length;j++){dels[j].addEventListener('click',function(){self.mw_removeMouse(this.getAttribute('data-id'));});}
     this.mw_applyRosterCollapse();
   },
@@ -313,9 +318,10 @@ my_widget_script =
   mw_selectAllMice: function (on) { var chks=document.querySelectorAll('.mw-micechk'); var i; for(i=0;i<chks.length;i++){chks[i].checked=on;} this.mw_renderPerMouse(); },
   mw_renderMiceChecks: function () {
     var box=document.getElementById('e_micechecks'); if(!box){return;}
-    if(this.mw_mice.length===0){box.innerHTML='<span style="color:#6b7885;font-style:italic;">Add mice above first.</span>';return;}
+    var activeMice=[]; var ai; for(ai=0;ai<this.mw_mice.length;ai++){if(this.mw_mice[ai].active!==false){activeMice.push(this.mw_mice[ai]);}}
+    if(activeMice.length===0){box.innerHTML='<span style="color:#6b7885;font-style:italic;">'+(this.mw_mice.length?'No active mice. Reactivate one in the roster to log events.':'Add mice above first.')+'</span>';this.mw_renderPerMouse();return;}
     var html=''; var i;
-    for(i=0;i<this.mw_mice.length;i++){ var m=this.mw_mice[i]; var lbl=this.mw_esc(m.id); if(m.eartag){lbl+=' ('+this.mw_esc(m.eartag)+')';} if(m.group){lbl+=' ['+this.mw_esc(m.group)+']';} html+='<label><input type="checkbox" class="mw-micechk" value="'+this.mw_esc(m.id)+'">'+lbl+'</label>'; }
+    for(i=0;i<activeMice.length;i++){ var m=activeMice[i]; var lbl=this.mw_esc(m.id); if(m.eartag){lbl+=' ('+this.mw_esc(m.eartag)+')';} if(m.group){lbl+=' ['+this.mw_esc(m.group)+']';} html+='<label><input type="checkbox" class="mw-micechk" value="'+this.mw_esc(m.id)+'">'+lbl+'</label>'; }
     box.innerHTML=html;
     var self=this; var chks=box.querySelectorAll('.mw-micechk'); var c; for(c=0;c<chks.length;c++){chks[c].addEventListener('change',function(){self.mw_renderPerMouse();});}
     this.mw_renderPerMouse();
@@ -529,7 +535,7 @@ my_widget_script =
     var added={mice:0,events:0},updated={mice:0,events:0},skipped={mice:0,events:0},badrows=0; var r;
     for(r=start;r<rows.length;r++){
       var col=rows[r]; if(!col||col.length===0){continue;} var id=this.mw_cell(col,map.id); if(!id){badrows++;continue;}
-      var incoming={id:id,eartag:this.mw_cell(col,map.eartag),sex:this.mw_cell(col,map.sex),cage:this.mw_cell(col,map.cage),group:this.mw_cell(col,map.group),dob:this.mw_cell(col,map.dob),strain:this.mw_cell(col,map.strain),genotype:this.mw_cell(col,map.genotype)};
+      var incoming={id:id,eartag:this.mw_cell(col,map.eartag),sex:this.mw_cell(col,map.sex),cage:this.mw_cell(col,map.cage),group:this.mw_cell(col,map.group),dob:this.mw_cell(col,map.dob),strain:this.mw_cell(col,map.strain),genotype:this.mw_cell(col,map.genotype),active:true};
       var existing=this.mw_findMouse(id);
       if(!existing){this.mw_mice.push(incoming);added.mice++;existing=incoming;}
       else if(dupMouse==='overwrite'){existing.eartag=incoming.eartag;existing.sex=incoming.sex;existing.cage=incoming.cage;existing.group=incoming.group;existing.dob=incoming.dob;existing.strain=incoming.strain;existing.genotype=incoming.genotype;updated.mice++;}
@@ -573,6 +579,7 @@ my_widget_script =
     this.mw_mice=[]; this.mw_events=[]; var title='';
     try{var d=json_data;if(typeof d==='string'&&d.length){d=JSON.parse(d);}if(d&&typeof d==='object'){if(d.mw_mice){this.mw_mice=d.mw_mice;}if(d.mw_events){this.mw_events=d.mw_events;}if(d.mw_title){title=d.mw_title;}}}catch(e){this.mw_mice=[];this.mw_events=[];}
     if(!this.mw_mice){this.mw_mice=[];} if(!this.mw_events){this.mw_events=[];}
+    var mi; for(mi=0;mi<this.mw_mice.length;mi++){if(this.mw_mice[mi].active===undefined){this.mw_mice[mi].active=true;}}
     var i; for(i=0;i<this.mw_events.length;i++){ if(!this.mw_events[i].perMousePhotos){this.mw_events[i].perMousePhotos={};} if(!this.mw_events[i].perMouse){this.mw_events[i].perMouse={};} if(!this.mw_events[i].photos){this.mw_events[i].photos=[];} }
     var tEl=document.getElementById('projecttitle'); if(tEl){tEl.value=title;}
   },
