@@ -75,6 +75,12 @@
     "url": "https://www.tinkercad.com/",
     "category": "Tools",
     "desc": "3D Design"
+  },
+  {
+    "title": "realfavicongenerator/",
+    "url": "https://realfavicongenerator.net/",
+    "category": "Tools",
+    "desc": "Icon converter"
   }
   
 ]
