@@ -81,6 +81,19 @@
     "url": "https://realfavicongenerator.net/",
     "category": "Tools",
     "desc": "Icon converter"
+  },
+  {
+    "title": "Google COLAB-DLC",
+    "url": "https://colab.research.google.com/github/DeepLabCut/DeepLabCut/blob/master/examples/COLAB/COLAB_DEMO_SuperAnimal.ipynb",
+    "category": "Tools",
+    "desc": "DLC with superAnimal models"
+  },
+  {
+    "title": "QR code generator",
+    "url": "https://www.qrcode-monkey.com/",
+    "category": "Tools",
+    "desc": "QR code generator for free"
   }
+  
   
 ]
