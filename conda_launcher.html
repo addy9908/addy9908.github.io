@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conda Launcher</title>
+<style>
+:root{
+  --bg:#eef2f5;--card:#fff;--ink:#16222c;--mute:#5f6e7a;--line:#d6dee4;
+  --acc:#2f8f4e;--accd:#216b39;--warn:#b4531a;--warnbg:#fdf0e6;--okbg:#e6f5ec;--ok:#1e7a48;
+  --code:#f1f4f7;--shadow:0 1px 3px rgba(16,24,40,.07),0 1px 2px rgba(16,24,40,.04);
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#111a20;--card:#1a242b;--ink:#e7eef2;--mute:#92a2ac;--line:#2c3a43;
+  --acc:#4cb36b;--accd:#6ac887;--warn:#e0894f;--warnbg:#2a2017;--okbg:#16281d;--ok:#6ac887;--code:#141d23;
+  --shadow:0 1px 3px rgba(0,0,0,.3);
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:28px 18px 70px}
+h1{font-size:28px;margin:0 0 2px;letter-spacing:-.5px}
+.sub{color:var(--mute);margin:0 0 24px;font-size:15px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow)}
+.step-h{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.step-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.step-h h2{font-size:17px;margin:0}
+label{display:block;font-size:12.5px;color:var(--mute);margin:12px 0 4px;font-weight:600}
+input[type=text],select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font:14px Consolas,"SF Mono",monospace}
+select{font-family:inherit}
+textarea{resize:vertical;font-family:inherit!important;min-height:44px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,.btn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.row>div{flex:1;min-width:230px}
+button,.btn{display:inline-block;padding:9px 15px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 14px inherit;cursor:pointer;text-decoration:none;white-space:nowrap}
+button:hover,.btn:hover{border-color:var(--acc);color:var(--ink)}
+.pri{background:var(--acc);border-color:var(--acc);color:#fff}.pri:hover{background:var(--accd);color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.acts.sm .btn,.acts.sm button{padding:6px 11px;font-size:13px}
+.msg{font-size:13px;color:var(--mute);margin-top:8px}
+.statusline{display:flex;align-items:center;gap:8px;font-size:13.5px;padding:8px 12px;border-radius:7px;margin-top:12px;border:1px solid var(--line)}
+.statusline.ok{background:var(--okbg);color:var(--ok);border-color:transparent}
+.statusline.warn{background:var(--warnbg);color:var(--warn);border-color:transparent}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;background:currentColor}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border:1px solid var(--line);border-radius:99px;font:13px Consolas,monospace;background:var(--bg)}
+.chip button{padding:0 4px;font-size:13px;line-height:1;border:none;background:none;color:var(--mute)}
+.chip button:hover{color:var(--warn)}
+.preview{background:var(--bg);border:1px dashed var(--acc);border-radius:9px;padding:12px 14px;margin-top:12px;display:none}
+.preview.show{display:block}
+.preview h4{margin:0 0 6px;font-size:14px;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:13px}
+.item{border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:9px;padding:13px 14px;display:flex;flex-direction:column;gap:7px;cursor:pointer;background:var(--card);transition:box-shadow .12s}
+.item:hover{box-shadow:var(--shadow)}
+.item.sel{box-shadow:0 0 0 2px var(--acc)}
+.item b{font-size:15.5px}
+.item small{color:var(--mute);font-family:Consolas,monospace;word-break:break-all;font-size:12px}
+.desc{font-size:13px;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--accd);background:var(--okbg);border-radius:99px;padding:2px 8px}
+.detail{background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:9px;padding:16px 18px;margin-bottom:14px}
+.detail h3{margin:0 0 4px;font-size:19px}
+.detail p{margin:6px 0 12px;white-space:pre-wrap;color:var(--ink)}
+.detail dl{display:grid;grid-template-columns:140px 1fr;gap:5px 14px;margin:0 0 12px;font-size:14px}
+.detail dt{color:var(--mute);font-weight:600}
+.detail dd{margin:0;font-family:Consolas,monospace;word-break:break-all}
+details{margin-top:12px;font-size:14px}
+summary{cursor:pointer;font-weight:600;color:var(--acc)}
+ol{padding-left:20px;margin:10px 0}ol li{margin:5px 0}
+code{font-family:Consolas,monospace;background:var(--code);padding:1px 6px;border-radius:4px;font-size:13px}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;color:var(--ink);font-weight:400}
+.chk input{width:auto}
+.hint{font-size:12.5px;color:var(--mute);margin-top:5px;font-style:italic}
+.banner{background:var(--warnbg);color:var(--warn);border-radius:9px;padding:12px 16px;margin-bottom:18px;font-size:14px;display:none}
+.banner.show{display:block}
+</style>
+</head>
+<body>
+<main>
+<h1>Conda Launcher</h1>
+<p class="sub">Save your Python scripts, Suite2p, DeepLabCut and tools — each paired with its conda environment — then launch them with one click.</p>
+
+<div class="banner" id="browserWarn">This page needs <b>Chrome or Edge on Windows</b>. Other browsers can't access folders or register the launcher.</div>
+
+<!-- STEP 1 -->
+<div class="step">
+ <div class="step-h"><span class="step-n">1</span><h2>Anaconda root &amp; environment folders</h2></div>
+
+ <div class="row">
+  <div><label for="root">Anaconda root folder — paste full path</label><input type="text" id="root" placeholder="C:\Users\you\anaconda3"></div>
+ </div>
+ <div class="statusline" id="rootStat"><span class="dot"></span><span id="rootText">Anaconda root: enter the full path.</span></div>
+ <p class="hint">Just type the path (Explorer: Shift + right-click the folder &rarr; “Copy as path”). No folder access is needed — the path is only used to activate environments when a shortcut runs. This is why a root inside AppData is fine here even though browsers won't let you pick it.</p>
+
+ <div class="row" style="margin-top:18px">
+  <div><label>Environments folder</label><button id="bPickEnv">Pick &amp; scan a folder</button></div>
+ </div>
+ <p class="hint">Pick the folder; the page scans and previews the environments it finds. Then enter the folder's full path (browsers hide it) and click Add. Repeat to add envs stored elsewhere.</p>
+
+ <div class="preview" id="envPreview">
+  <h4 id="previewTitle"></h4>
+  <div class="chips" id="previewChips"></div>
+  <label for="envsPath" style="margin-top:12px">Full path of the folder you just picked</label>
+  <input type="text" id="envsPath" placeholder="C:\Users\you\anaconda3\envs">
+  <p class="hint">Needed so the launcher can locate these environments. Explorer: Shift + right-click the folder &rarr; “Copy as path”.</p>
+  <div class="acts sm"><button class="pri" id="bAddEnvFolder">Add this folder</button><button id="bDiscardEnv">Discard</button></div>
+ </div>
+
+ <label style="margin-top:16px">Added environment folders</label>
+ <div class="chips" id="folders"><span class="msg">None yet.</span></div>
+ <div class="acts sm"><button id="bRescan">Rescan all</button><button id="bRe">Reconnect folders</button></div>
+
+ <details>
+  <summary>Add an environment by path (for envs under AppData that can't be scanned)</summary>
+  <p class="hint" style="margin-top:8px">If conda is installed under AppData, browsers block scanning that folder. Add those environments by typing their full paths here instead — one per line. Each line is the full path to an environment folder (the one containing <code>python.exe</code>).</p>
+  <textarea id="manualEnvs" rows="3" placeholder="C:\Users\me\AppData\Local\anaconda3&#10;C:\Users\me\AppData\Local\anaconda3\envs\suite2p&#10;C:\Users\me\AppData\Local\anaconda3\envs\DEEPLABCUT"></textarea>
+  <div class="acts sm"><button class="pri" id="bAddManual">Add these environments</button></div>
+  <p class="hint">Tip: the base environment is the Anaconda root itself. Named envs are usually under <code>...\anaconda3\envs\&lt;name&gt;</code>.</p>
+ </details>
+</div>
+
+<!-- STEP 2 -->
+<div class="step">
+ <div class="step-h"><span class="step-n">2</span><h2>Launcher folder &amp; one-click Run setup</h2></div>
+ <div class="row">
+  <div><label for="lpath">Launcher folder — paste full path (for the .reg installer)</label><input type="text" id="lpath" placeholder="C:\Users\you\CondaLauncher"></div>
+  <button class="pri" id="bLaunch">Pick launcher folder</button>
+ </div>
+ <div class="statusline" id="conn"><span class="dot"></span><span id="connText">Launcher folder: not chosen yet.</span></div>
+ <p class="hint">Holds your saved list and the launcher files. Paste the full path <b>and</b> pick the folder — the path is needed inside the .reg; the pick grants write access.</p>
+
+ <div class="acts sm">
+  <button id="bReg">Download Run installer (.reg)</button>
+  <button id="bDlJson">Export list (JSON)</button>
+  <button id="bDlCsv">Export list (CSV)</button>
+  <button id="bImp">Import JSON</button>
+  <input type="file" id="fImp" accept=".json" hidden>
+ </div>
+
+ <details>
+  <summary>How one-click Run works (set up once)</summary>
+  <ol>
+   <li>Paste the launcher folder path and pick it. The page writes <code>shortcuts.json</code>, <code>launcher.ps1</code> and <code>install_protocol.reg</code> there.</li>
+   <li>Double-click <code>install_protocol.reg</code> once on this PC to register the <code>condahub://</code> link.</li>
+   <li>First Run click: Chrome/Edge asks to open the app — tick “Always allow”.</li>
+  </ol>
+  No registry install? Use <b>Save .bat</b> on any shortcut and double-click the file instead.
+ </details>
+</div>
+
+<!-- STEP 3 -->
+<div class="step">
+ <div class="step-h"><span class="step-n">3</span><h2>Environments <span id="envCount" class="msg" style="margin:0"></span></h2></div>
+ <div class="chips" id="envs"><span class="msg">Add an environments folder in step 1 to list them here.</span></div>
+</div>
+
+<!-- STEP 4 -->
+<div class="step">
+ <div class="step-h"><span class="step-n">4</span><h2 id="formTitle">Add a shortcut</h2></div>
+ <div class="row">
+  <div><label for="sName">Name</label><input type="text" id="sName" placeholder="e.g. Suite2p, my_analysis.py"></div>
+  <div><label for="sEnv">Environment</label><select id="sEnv"></select></div>
+  <div><label for="sType">What to run</label>
+   <select id="sType">
+    <option value="script">Python script (.py)</option>
+    <option value="dlc">DeepLabCut (GUI)</option>
+    <option value="suite2p">Suite2p (GUI)</option>
+    <option value="spyder">Spyder</option>
+    <option value="jupyter">JupyterLab</option>
+    <option value="custom">Custom command</option>
+   </select></div>
+ </div>
+ <div class="row" id="fileRow">
+  <div><label for="sFile">Python file — full path</label><input type="text" id="sFile" placeholder="D:\data\analysis.py"></div>
+  <button id="bFile" title="In Explorer: Shift + right-click the file, Copy as path, then click this">Paste path</button>
+ </div>
+ <div class="row" id="cmdRow" hidden>
+  <div><label for="sCmd">Command</label><input type="text" id="sCmd" placeholder="python -m mytool --flag"></div>
+ </div>
+ <div class="row">
+  <div><label for="sDir">Working folder — full path (optional; GUI tools don't need one)</label><input type="text" id="sDir" placeholder="D:\data\project"></div>
+  <button id="bDir" title="In Explorer: Shift + right-click the folder, Copy as path, then click this">Paste path</button>
+ </div>
+ <div class="row">
+  <div><label for="sArgs">Extra arguments (optional)</label><input type="text" id="sArgs" placeholder="--config config.yaml"></div>
+ </div>
+ <div class="row">
+  <div><label for="sDesc">Description (optional)</label><textarea id="sDesc" rows="2" placeholder="What this does, which dataset, any notes"></textarea></div>
+ </div>
+ <label class="chk"><input type="checkbox" id="sKeep" checked> Keep the terminal window open after it finishes</label>
+ <label class="chk" id="actRow"><input type="checkbox" id="sAct" checked> Activate the environment first <span class="hint" style="margin:0">(uncheck to call the env's python.exe directly)</span></label>
+ <div class="acts"><button class="pri" id="bAdd">Save shortcut</button><button id="bCancel" hidden>Cancel edit</button></div>
+ <p class="hint" id="browseHint">Full paths are required. In Explorer: <b>Shift + right-click</b> the file or folder &rarr; <b>Copy as path</b>, then click <b>Paste path</b> (or paste with Ctrl+V). Browsers can't read paths from a file dialog, so this copy-then-paste step is how the real path gets in.</p>
+</div>
+
+<!-- STEP 5 -->
+<div class="step">
+ <div class="step-h"><span class="step-n">5</span><h2>Your shortcuts</h2></div>
+ <input type="text" id="q" placeholder="Filter by name, environment or description" style="margin-bottom:14px">
+ <div class="detail" id="detail" hidden></div>
+ <div class="grid" id="list"><span class="msg">Nothing saved yet. Add one in step 4.</span></div>
+</div>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+let cfg={condaRoot:'',envFolders:[],launcherPath:'',envs:[],shortcuts:[]};
+let H={envs:{},launch:null,root:null};
+let editId=null,selId=null;
+let pend=null; // pending env folder being previewed: {path, handle, found:[{name,path,folder}]}
+
+// ---------- storage ----------
+const db=()=>new Promise((res,rej)=>{const r=indexedDB.open('condahub',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function kvGet(k){try{const d=await db();return await new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r()})}catch(e){}}
+async function kvSet(k,v){try{const d=await db();return await new Promise(r=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=r;t.onerror=r})}catch(e){}}
+const granted=async h=>{try{return !!h&&(await h.queryPermission({mode:'readwrite'}))==='granted'}catch(e){return false}};
+const grantedR=async h=>{try{return !!h&&(await h.queryPermission({mode:'read'}))==='granted'}catch(e){return false}};
+const norm=p=>p.trim().replace(/^"|"$/g,'').replace(/[\\/]+$/,'');
+const isAbs=p=>/^[A-Za-z]:[\\/]|^\\\\/.test(p);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ---------- launcher files ----------
+const PS1=`param([string]$u)
+$id=(($u -replace '^condahub:(//)?run/?','').Trim('/')).Trim()
+$cfg=Get-Content "$PSScriptRoot\\shortcuts.json" -Raw | ConvertFrom-Json
+$s=$cfg.shortcuts | Where-Object { $_.id -eq $id } | Select-Object -First 1
+if(-not $s){ exit }
+$bat="$env:TEMP\\condahub_$id.bat"
+$l=@('@echo off')
+if(-not $s.noActivate){ $l+="call \`"$($cfg.condaRoot)\\Scripts\\activate.bat\`" \`"$($s.envPath)\`"" }
+if($s.workdir){ $l+="cd /d \`"$($s.workdir)\`"" }
+$l+=$s.run
+Set-Content -Path $bat -Value $l -Encoding Default
+$flag= if($s.keepOpen){'/k'}else{'/c'}
+Start-Process cmd.exe -ArgumentList $flag,"\`"$bat\`""
+`;
+function regText(){
+ const p=(cfg.launcherPath||'C:\\CondaLauncher').replace(/\\/g,'\\\\');
+ return `Windows Registry Editor Version 5.00\r\n\r\n[HKEY_CURRENT_USER\\Software\\Classes\\condahub]\r\n@="URL:Conda Launcher"\r\n"URL Protocol"=""\r\n\r\n[HKEY_CURRENT_USER\\Software\\Classes\\condahub\\shell\\open\\command]\r\n@="powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \\"${p}\\\\launcher.ps1\\" \\"%1\\""\r\n`;
+}
+async function writeFile(dir,name,text){const f=await dir.getFileHandle(name,{create:true});const w=await f.createWritable();await w.write(text);await w.close()}
+const jsonText=()=>JSON.stringify({condaRoot:cfg.condaRoot,envFolders:cfg.envFolders,launcherPath:cfg.launcherPath,envs:cfg.envs,shortcuts:cfg.shortcuts},null,2);
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+// Write all three launcher files when possible; returns which were written.
+// READ-ONLY MODE: the HTML never writes shortcuts.json / launcher.ps1 / .reg.
+// The Python app is the sole editor of these files. This prevents the HTML's
+// (possibly stale) browser copy from overwriting your Python edits.
+async function writeLauncherFiles(){
+ return {json:false,ps1:false,reg:false,reason:'read-only mode'};
+}
+
+async function persist(){
+ cfg.condaRoot=norm($('#root').value);cfg.launcherPath=norm($('#lpath').value);
+ await kvSet('cfg',cfg);          // browser-local only; does NOT touch shortcuts.json on disk
+ render();
+}
+
+// ---------- scan a single folder handle -> list of envs ----------
+async function scanFolder(base,dir){
+ const found=[];
+ for await(const [name,h] of dir.entries()){
+  if(h.kind!=='directory')continue;
+  let ok=false;
+  try{await h.getDirectoryHandle('conda-meta');ok=true}catch(e){try{await h.getFileHandle('python.exe');ok=true}catch(e2){}}
+  if(ok)found.push({name,path:base+'\\'+name,folder:base});
+ }
+ return found;
+}
+
+// Rebuild cfg.envs from all connected folders (+ base), keeping manual ones.
+async function rescanAll(){
+ const scanned=new Set(),found=[],skipped=[];
+ for(const base of cfg.envFolders){
+  const dir=H.envs[base];
+  if(!dir||(!(await grantedR(dir))&&(await dir.requestPermission({mode:'read'}))!=='granted')){skipped.push(base);continue}
+  scanned.add(base);
+  const list=await scanFolder(base,dir);
+  for(const e of list)found.push(e);
+ }
+ // keep: manual envs, plus scanned-folder envs whose folder wasn't re-scanned this round
+ const keep=cfg.envs.filter(e=>e.manual||(e.name!=='base'&&!scanned.has(e.folder)));
+ const out=found.concat(keep);
+ const root=norm($('#root').value);
+ if(root&&!out.some(e=>e.name==='base'))out.unshift({name:'base',path:root});
+ // de-dupe by path
+ const seen={},uniq=[];
+ for(const e of out){if(!seen[e.path]){seen[e.path]=1;uniq.push(e)}}
+ uniq.sort((a,b)=>a.name.localeCompare(b.name));
+ cfg.envs=uniq;await persist();
+}
+
+// ---------- shortcuts ----------
+function buildRun(s){
+ const a=s.args?' '+s.args:'';
+ const py=s.noActivate?'"'+s.envPath+'\\python.exe"':'python';
+ switch(s.type){
+  case 'dlc':return py+' -m deeplabcut'+a;
+  case 'suite2p':return py+' -m suite2p'+a;
+  case 'spyder':return 'spyder'+a;
+  case 'jupyter':return 'jupyter lab'+a;
+  case 'custom':return s.cmd+a;
+  default:return `${py} "${s.file}"`+a;
+ }
+}
+function endEdit(){editId=null;$('#bAdd').textContent='Save shortcut';$('#bCancel').hidden=true;$('#formTitle').textContent='Add a shortcut'}
+function fillForm(s){
+ editId=s.id;
+ if(![...$('#sEnv').options].some(o=>o.value===s.envPath))$('#sEnv').add(new Option(s.env+' (not in list)',s.envPath));
+ $('#sEnv').value=s.envPath;$('#sType').value=s.type;applyTypeVisibility();
+ $('#sName').value=s.name;$('#sDir').value=s.workdir||'';$('#sFile').value=s.file||'';$('#sCmd').value=s.cmd||'';$('#sArgs').value=s.args||'';$('#sDesc').value=s.description||'';
+ $('#sKeep').checked=!!s.keepOpen;$('#sAct').checked=!s.noActivate;
+ $('#bAdd').textContent='Update shortcut';$('#bCancel').hidden=false;$('#formTitle').textContent='Edit shortcut';
+ $('#formTitle').scrollIntoView({behavior:'smooth',block:'center'});
+}
+async function addShortcut(){
+ const envPath=$('#sEnv').value,type=$('#sType').value;
+ const env=cfg.envs.find(e=>e.path===envPath);
+ if(!env){alert('Pick an environment first (add an envs folder in step 1).');return}
+ const labels={dlc:'DeepLabCut',suite2p:'Suite2p',spyder:'Spyder',jupyter:'JupyterLab'};
+ let file=norm($('#sFile').value),dir=norm($('#sDir').value);
+ // A working folder must be a full path; a bare name (from Browse) is invalid.
+ if(dir&&!isAbs(dir)){
+  alert('The working folder "'+dir+'" is only a name, not a full path. Clear it (most GUI tools like Suite2p/DeepLabCut don\'t need one), or paste the full path (Explorer: Shift + right-click folder, Copy as path).');
+  $('#sDir').focus();return;
+ }
+ if(type==='script'){
+  if(!file){alert('Enter the Python file.');return}
+  if(!isAbs(file)&&dir)file=dir+'\\'+file;
+  if(!isAbs(file)){alert('Give the full path of the .py file, or set a working folder so the file name can be joined to it.');return}
+ }
+ if(type==='custom'&&!$('#sCmd').value.trim()){alert('Enter the command to run.');return}
+ const s={id:editId||Math.random().toString(36).slice(2,10),type,env:env.name,envPath:env.path,file:type==='script'?file:'',
+  workdir:dir||(type==='script'?file.replace(/[\\/][^\\/]*$/,''):''),
+  description:$('#sDesc').value.trim(),cmd:$('#sCmd').value.trim(),args:$('#sArgs').value.trim(),
+  keepOpen:$('#sKeep').checked,noActivate:['script','dlc','suite2p'].includes(type)&&!$('#sAct').checked};
+ s.name=$('#sName').value.trim()||(labels[type]||(type==='script'?file.split(/[\\/]/).pop():'Custom'))+' ('+env.name+')';
+ s.run=buildRun(s);
+ const i=cfg.shortcuts.findIndex(x=>x.id===editId),upd=editId&&i>-1;
+ if(upd)cfg.shortcuts[i]=s;else cfg.shortcuts.push(s);
+ selId=s.id;endEdit();await persist();
+ ['#sName','#sFile','#sArgs','#sCmd','#sDesc'].forEach(i=>$(i).value='');
+}
+function batText(s){return '@echo off\r\n'+(s.noActivate?'':`call "${cfg.condaRoot}\\Scripts\\activate.bat" "${s.envPath}"\r\n`)+(s.workdir?`cd /d "${s.workdir}"\r\n`:'')+s.run+'\r\n'+(s.keepOpen?'cmd /k\r\n':'')}
+async function saveBat(s){
+ const fname=s.name.replace(/[^\w.-]+/g,'_')+'.bat';
+ if(await granted(H.launch)){
+  try{await writeFile(H.launch,fname,batText(s));alert('Saved '+fname+' into the launcher folder.');return}catch(e){}
+ }
+ download(fname,batText(s),'text/plain');
+}
+
+// ---------- render ----------
+const TYPES={script:'Python script',dlc:'DeepLabCut',suite2p:'Suite2p',spyder:'Spyder',jupyter:'JupyterLab',custom:'Custom command'};
+function applyTypeVisibility(){
+ const t=$('#sType').value;
+ $('#fileRow').hidden=(t!=='script');
+ $('#cmdRow').hidden=(t!=='custom');
+ $('#actRow').hidden=!['script','dlc','suite2p'].includes(t);
+ $('#browseHint').style.display=(t==='script')?'':'none';
+}
+function showDetail(){
+ const s=cfg.shortcuts.find(x=>x.id===selId),D=$('#detail');
+ if(!s){D.hidden=true;return}
+ const py=['script','dlc','suite2p'].includes(s.type);
+ const rows=[['Environment',s.env],['Env path',s.envPath],['Runs',TYPES[s.type]||s.type],['Python file',s.file],['Working folder',s.workdir],['Arguments',s.args],['Full command',s.run],
+  ['Activation',py?(s.noActivate?'Direct python.exe (no activation)':'Activates env first'):'Activates env first'],['Terminal',s.keepOpen?'Stays open':'Closes when done']].filter(r=>r[1]);
+ D.hidden=false;
+ D.innerHTML=`<h3>${esc(s.name)}</h3><p>${s.description?esc(s.description):'<span class="msg">No description. Use Edit to add one.</span>'}</p>
+ <dl>${rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>
+ <div class="acts sm"><a class="btn pri" href="condahub://run/${s.id}">Run</a><button data-edit="${s.id}">Edit</button><button data-bat="${s.id}">Save .bat</button><button data-del="${s.id}">Delete</button></div>`;
+}
+function updateConn(){
+ const c=$('#conn'),t=$('#connText');
+ if(!H.launch){c.className='statusline warn';t.textContent='Launcher folder: not chosen yet.';return}
+ granted(H.launch).then(ok=>{
+  c.className='statusline '+(ok?'ok':'warn');
+  var nm=H.launch.name?('"'+H.launch.name+'"'):'folder';
+  t.textContent=ok?('Launcher folder connected: '+nm+' — files save automatically here.'):('Launcher folder '+nm+' NOT connected. Click “Reconnect folders”.');
+ });
+}
+function updateRootStat(){
+ const c=$('#rootStat'),t=$('#rootText');
+ const p=norm($('#root').value);
+ if(!p){c.className='statusline warn';t.textContent='Anaconda root: enter the full path.';return}
+ if(!isAbs(p)){c.className='statusline warn';t.textContent='That does not look like a full path (e.g. C:\\Users\\you\\anaconda3).';return}
+ c.className='statusline ok';t.textContent='Anaconda root path set: '+p;
+}
+function render(){
+ updateConn();updateRootStat();showDetail();applyTypeVisibility();
+ $('#folders').innerHTML=cfg.envFolders.length?cfg.envFolders.map(f=>`<span class="chip">${esc(f)} <button data-rm="${esc(f)}" title="Remove">&times;</button></span>`).join(''):'<span class="msg">None yet.</span>';
+ const q=$('#q').value.trim().toLowerCase();
+ const shown=cfg.shortcuts.filter(s=>!q||[s.name,s.env,s.description,s.file,s.type].join(' ').toLowerCase().includes(q));
+ $('#envs').innerHTML=cfg.envs.length?cfg.envs.map(e=>`<span class="chip" title="${esc(e.path)}">${esc(e.name)}${e.manual?' <span class="msg" style="margin:0;font-size:11px">(manual)</span>':''}</span>`).join(''):'<span class="msg">Add an environments folder in step 1 to list them here.</span>';
+ $('#envCount').textContent=cfg.envs.length?`(${cfg.envs.length})`:'';
+ const cur=$('#sEnv').value;
+ $('#sEnv').innerHTML=cfg.envs.map(e=>`<option value="${esc(e.path)}">${esc(e.name)}${cfg.envs.filter(x=>x.name===e.name).length>1?' ('+esc(e.folder||'')+')':''}</option>`).join('');
+ if(cur)$('#sEnv').value=cur;
+ $('#list').innerHTML=shown.length?shown.map(s=>`<div class="item${s.id===selId?' sel':''}" data-id="${s.id}"><b>${esc(s.name)}</b><small>${esc(s.env)}${s.noActivate?' · direct python.exe':''}</small>${s.description?`<span class="desc">${esc(s.description)}</span>`:''}<div><span class="badge">${esc(TYPES[s.type]||s.type)}</span></div>
+  <div class="acts sm"><a class="btn pri" href="condahub://run/${s.id}">Run</a><button data-edit="${s.id}">Edit</button><button data-bat="${s.id}">.bat</button><button data-del="${s.id}">Delete</button></div></div>`).join(''):'<span class="msg">Nothing saved yet. Add one in step 4.</span>';
+}
+
+// ---------- events: step 1 ----------
+$('#bPickEnv').onclick=async()=>{try{
+ const h=await showDirectoryPicker({id:'envs',mode:'read'});
+ // Scan using a temporary base (the folder name) just for preview; the
+ // real full path is supplied in the preview box before adding.
+ const found=await scanFolder('',h).catch(()=>[]);
+ pend={handle:h,name:h.name,found};
+ $('#previewTitle').textContent=found.length?('Found '+found.length+' environment(s) in "'+h.name+'":'):('No environments found in "'+h.name+'". This may be the wrong folder.');
+ $('#previewChips').innerHTML=found.length?found.map(e=>`<span class="chip">${esc(e.name)}</span>`).join(''):'<span class="msg">(no conda-meta / python.exe found in subfolders)</span>';
+ $('#envsPath').value='';
+ $('#envPreview').classList.add('show');
+ $('#envsPath').focus();
+}catch(e){if(e.name!=='AbortError')alert(e.message)}};
+
+$('#bAddEnvFolder').onclick=async()=>{
+ if(!pend)return;
+ const path=norm($('#envsPath').value);
+ if(!path){alert('Enter the full path of the folder you picked, so the launcher can locate these environments.');$('#envsPath').focus();return}
+ if(!isAbs(path)){alert('That does not look like a full path. Use Explorer: Shift + right-click the folder, Copy as path.');$('#envsPath').focus();return}
+ H.envs[path]=pend.handle;await kvSet('hEnvs',H.envs);
+ if(!cfg.envFolders.includes(path))cfg.envFolders.push(path);
+ if(!norm($('#root').value)){const guess=path.replace(/[\\/][^\\/]*$/,'');if(/anaconda|miniconda|conda/i.test(path)){$('#root').value=guess;$('#root').dataset.auto=1}}
+ $('#envsPath').value='';$('#envPreview').classList.remove('show');pend=null;
+ await rescanAll();
+};
+$('#bDiscardEnv').onclick=()=>{pend=null;$('#envPreview').classList.remove('show');$('#envsPath').value=''};
+
+$('#bAddManual').onclick=async()=>{
+ const lines=$('#manualEnvs').value.split('\n').map(x=>norm(x)).filter(Boolean);
+ if(!lines.length){alert('Enter at least one environment full path, one per line.');return}
+ let added=0,bad=[];
+ for(const p of lines){
+  if(!isAbs(p)){bad.push(p);continue}
+  const name=p.replace(/[\\/]+$/,'').split(/[\\/]/).pop();
+  if(!cfg.envs.some(e=>e.path===p)){cfg.envs.push({name:name,path:p,folder:'(manual)',manual:true});added++;}
+ }
+ cfg.envs.sort((a,b)=>a.name.localeCompare(b.name));
+ $('#manualEnvs').value='';
+ await persist();
+ alert('Added '+added+' environment(s) by path.'+(bad.length?'\n\nSkipped (not full paths):\n'+bad.join('\n'):''));
+};
+
+$('#folders').onclick=async e=>{const p=e.target.dataset.rm;if(!p)return;
+ cfg.envFolders=cfg.envFolders.filter(x=>x!==p);delete H.envs[p];await kvSet('hEnvs',H.envs);
+ cfg.envs=cfg.envs.filter(x=>x.folder!==p);await persist()};
+$('#bRescan').onclick=rescanAll;
+$('#bRe').onclick=async()=>{
+ const need=[[H.launch,'readwrite']].concat(Object.values(H.envs).map(h=>[h,'read']));
+ for(const [h,m] of need)if(h&&(await h.queryPermission({mode:m}))!=='granted')await h.requestPermission({mode:m});
+ await persist();if(cfg.envFolders.length)await rescanAll();updateConn()};
+
+// ---------- events: step 2 ----------
+$('#bLaunch').onclick=async()=>{try{
+ H.launch=await showDirectoryPicker({id:'launch',mode:'read'});await kvSet('hLaunch',H.launch);
+ const found=await loadFromLauncher(true);
+ updateConn();
+ alert(found
+   ? ('Loaded '+cfg.shortcuts.length+' shortcut(s) from shortcuts.json (read-only — this page will not modify the file).')
+   : ('Connected to "'+H.launch.name+'". No shortcuts.json found here. This page is read-only and will not create or change files.'));
+}catch(e){if(e.name!=='AbortError')alert(e.message)}};
+
+// ---------- events: step 4/5 ----------
+$('#bAdd').onclick=addShortcut;
+$('#bCancel').onclick=()=>{endEdit();['#sName','#sFile','#sArgs','#sCmd','#sDesc'].forEach(i=>$(i).value='')};
+async function pasteInto(inputSel){
+ try{
+  const txt=await navigator.clipboard.readText();
+  const v=norm(txt);
+  if(!v){alert('Clipboard is empty. In Explorer, Shift + right-click the item and choose "Copy as path" first.');return}
+  $(inputSel).value=v;
+  if(inputSel==='#sDir')updateRootStat?.();
+ }catch(e){
+  alert('Could not read the clipboard. Click in the field and press Ctrl+V to paste, or allow clipboard access when prompted.');
+ }
+}
+$('#bDir').onclick=()=>pasteInto('#sDir');
+$('#bFile').onclick=()=>pasteInto('#sFile');
+$('#sType').onchange=applyTypeVisibility;
+$('#root').oninput=()=>{delete $('#root').dataset.auto;updateRootStat()};
+['#root','#lpath'].forEach(i=>$(i).onchange=persist);
+$('#q').oninput=render;
+$('#list').onclick=$('#detail').onclick=async e=>{const d=e.target.dataset;
+ const card=e.target.closest('.item');if(card&&!e.target.closest('a,button')){selId=card.dataset.id;render();return}
+ if(d.edit){const s=cfg.shortcuts.find(x=>x.id===d.edit);if(s)fillForm(s)}
+ if(d.del){if(editId===d.del)endEdit();if(selId===d.del)selId=null;cfg.shortcuts=cfg.shortcuts.filter(s=>s.id!==d.del);await persist()}
+ if(d.bat){const s=cfg.shortcuts.find(x=>x.id===d.bat);if(s)saveBat(s)}};
+
+// ---------- autoload ----------
+function migrate(){
+ if(!Array.isArray(cfg.envFolders))cfg.envFolders=cfg.envsPath?[cfg.envsPath]:[];
+ delete cfg.envsPath;
+ if(!Array.isArray(cfg.envs))cfg.envs=[];
+ cfg.envs.forEach(e=>{if(!e.folder&&e.name!=='base')e.folder=cfg.envFolders[0]});
+}
+async function loadFromLauncher(merge){
+ if(!(await granted(H.launch)))return false;
+ try{const f=await(await H.launch.getFileHandle('shortcuts.json')).getFile();const d=JSON.parse(await f.text());
+  const mine=cfg.shortcuts.filter(s=>!(d.shortcuts||[]).some(x=>x.id===s.id));
+  const typed=norm($('#lpath').value);
+  cfg=Object.assign(cfg,d);
+  if(merge)cfg.shortcuts=(d.shortcuts||[]).concat(mine);
+  migrate();
+  $('#root').value=cfg.condaRoot||'';$('#lpath').value=typed||cfg.launcherPath||'';
+  await kvSet('cfg',cfg);render();return true}catch(e){return false}
+}
+(async()=>{
+ if(!window.showDirectoryPicker){$('#browserWarn').classList.add('show');return}
+ const saved=await kvGet('cfg');if(saved)cfg=Object.assign(cfg,saved);
+ migrate();
+ const he=await kvGet('hEnvs');H.envs=he&&he.kind?(cfg.envFolders[0]?{[cfg.envFolders[0]]:he}:{}):(he||{});
+ H.launch=await kvGet('hLaunch')||null;
+ $('#root').value=cfg.condaRoot;$('#lpath').value=cfg.launcherPath;
+ applyTypeVisibility();
+ render();await loadFromLauncher();
+})();
+</script>
+</body>
+</html>
