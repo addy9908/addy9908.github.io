@@ -5,102 +5,352 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>iMOSS — Documentation</title>
 <link rel="stylesheet" href="../assets/style.css">
+<style>
+  .lead{font-size:1.05rem;color:var(--muted)}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:0 0 14px 42px;margin:0}
+  .steps li:before{counter-increment:step;content:counter(step);position:absolute;left:0;top:0;
+    width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-size:.9rem}
+  .steps li:not(:last-child):after{content:"";position:absolute;left:13px;top:30px;bottom:0;width:2px;background:var(--line)}
+  table.spec{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:12px}
+  table.spec th,table.spec td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  table.spec th{background:var(--code);color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.03em}
+  .figrow{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:14px}
+  .fig figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+  .fig img{width:100%;height:360px;object-fit:contain;display:block;background:#f0f2f5}
+  .fig figcaption{padding:10px 14px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line)}
+  .ph{display:flex;align-items:center;justify-content:center;min-height:170px;color:var(--muted);font-size:.85rem;text-align:center;padding:18px;background:#f0f2f5}
+  .callout{background:#eef7f1;border:1px solid #cdeadd;border-radius:10px;padding:14px 16px;margin-top:14px;font-size:.92rem}
+  .callout.amber{background:#fff8e6;border-color:#f0d98a}
+  .pill{display:inline-block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--brand-2);background:#eaf1fd;border-radius:999px;padding:2px 9px;margin-right:6px}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:0}
+  .toc a{display:inline-block;margin:3px 14px 3px 0;font-size:.92rem}
+  h2.section{scroll-margin-top:20px}
+  .imoss-logo{max-height:70px;display:block;margin:16px auto 10px}
+  .freeze-panel{position:sticky;top:60px;z-index:40;background:var(--bg,#fff);
+  padding:10px 0;border-bottom:1px solid var(--line)}
+  .freeze-panel h1{font-size:1.5rem}
+</style>
 </head>
 <body data-root="../">
 <main class="container">
   <a class="backlink" href="../index.html">&larr; Back to home</a>
 
-  <span class="tag">Open-source neuroscience tool</span>
-  <h1><b>iMOSS — Immobility/Mobility Optimized Scoring System</b></h1>
-  <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/iMOSS_logo.png">
-  <p class="note"><b>iMOSS</b> is an open-source platform for high-resolution immobility scoring in the tail 
-  suspension test (TST). By enabling precise synchronization with neural recordings, this platform 
-  supports critical advances in neuroscience and public health research.</p>
-  <p>Although it was originally developed for the TST, the software can also be applied to other
-     types of binary behavior scoring.</p>
-  <h2 class="section">Repository</h2>
-  <p><a href="https://github.com/addy9908/iMOSS" target="_blank" rel="noopener">View iMOSS on GitHub for more details &rarr;</a></p>
-  
-  <h2 class="section">Overview</h2>
-  <p>iMOSS is a flexible, open-source, low-cost platform for precise quantification of mobility
-     and immobility in rodent stress-coping behavior. It comprises two independent instruments:</p>
-  <ul>
-    <li><b>iMOSS-MV</b> — a video-based, frame-by-frame manual-scoring tool that lets you
-      annotate the exact onset frame of each binary event, overcoming the temporal imprecision
-      of conventional stopwatch scoring.</li>
-    <li><b>iMOSS-AS</b> — a sensor-based automated instrument that detects immobility/mobility
-      bouts from a load-cell signal at high sampling resolution, using a machine-learning
-      optimized detection threshold.</li>
-  </ul>
-  <p>The two tools can be used independently or together, and the automated output has been
-     shown to align closely with careful manual scoring while remaining sensitive to
-     pharmacological manipulation.</p>
-
-  <h2 class="section">Features</h2>
-  <ul>
-    <li>Frame-level manual annotation of binary behavioral events (iMOSS-MV).</li>
-    <li>Automated, sensor-based bout detection at high sampling rate (iMOSS-AS).</li>
-    <li>Machine-learning optimized threshold for automated immobility/mobility detection.</li>
-    <li>Low-cost, scalable hardware built around common load-cell amplifiers.</li>
-    <li>Applicable beyond the TST to other binary behavior-scoring paradigms.</li>
-    <li>Exports structured data for downstream statistical analysis and plotting.</li>
-    <li>Fully open source under the MIT license.</li>
-  </ul>
-
-  <h2 class="section">System requirements</h2>
-  <p>iMOSS-MV and iMOSS-AS are written in Python and use widely available libraries:
-     OpenCV, Tkinter, NumPy, Pandas, Pillow, SciPy, and PyExcelerate. The automated
-     hardware side (iMOSS-AS) uses an Arduino-compatible microcontroller reading HX711
-     load-cell amplifiers via the HX711_ADC library.</p>
-  <div class="workings">
-    <b>Software:</b> Python 3.x, plus: opencv-python, numpy, pandas, pillow, scipy, pyexcelerate
-    (Tkinter ships with most Python installs).<br>
-    <b>Hardware (iMOSS-AS):</b> Arduino-compatible board, HX711 load-cell amplifier(s),
-    load cell(s), and the <code>HX711_ADC</code> Arduino library.
+  <!-- Frozen panel: title + TOC -->
+  <div class="freeze-panel" id="freezePanel">
+    <h1 style="margin:0 0 8px">iMOSS — Immobility/Mobility Optimized Scoring System</h1>
+    <div class="toc">
+      <b>On this page:</b>
+      <a href="#overview">Overview</a>
+      <a href="#chamber">Building the TST chamber</a>
+      <a href="#as">iMOSS-AS hardware module</a>
+      <a href="#firmware">Firmware &amp; acquisition</a>
+      <a href="#analysis">Data analysis &amp; ML threshold</a>
+      <a href="#mv">iMOSS-MV</a>
+      <a href="#fp">Neural synchronization</a>
+      <a href="#install">Software install</a>
+      <a href="#cite">Citation</a>
+    </div>
   </div>
 
-  <h2 class="section">Installation</h2>
-  <p>Clone the repository:</p>
-  <div class="workings"><code>git clone https://github.com/addy9908/iMOSS.git</code><br><code>cd iMOSS</code></div>
-  <p>Install the Python dependencies (a virtual environment is recommended):</p>
-  <div class="workings"><code>pip install opencv-python numpy pandas pillow scipy pyexcelerate</code></div>
-  <p>For iMOSS-AS hardware, install the <code>HX711_ADC</code> library through the Arduino
-     Library Manager, open <code>iMOSS_AS_V1.ino</code> in the Arduino IDE, and upload it to
-     your board. Load-cell settling time and signal filtering can be adjusted in the library's
-     <code>config.h</code>.</p>
-  <p class="note">See the repository's own documentation for the authoritative, up-to-date
-     installation steps.</p>
+  <!-- Logo below the panel, centered (scrolls normally) -->
+  <img class="imoss-logo" src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/iMOSS_logo.png" alt="iMOSS logo" onerror="this.style.display='none'">
 
-  <h2 class="section">Usage</h2>
-  <p><b>iMOSS-MV (manual video scoring):</b> record your TST session (for example as an
-     <code>.avi</code> file), launch the iMOSS-MV application, load the video, and step through
-     frame by frame to mark the onset of each mobility/immobility event. The tool records the
-     exact frame for each transition and exports the scored data.</p>
-  <p><b>iMOSS-AS (automated sensor scoring):</b> mount the animal apparatus on the load cell(s),
-     run the uploaded Arduino sketch to stream force data, and use the iMOSS-AS software to
-     process the signal and classify immobility/mobility bouts using the optimized threshold.</p>
-  <p class="note">Pairing a frame-to-time mapping (e.g. a <code>.csv</code> exported during
-     acquisition) with the video gives precise timing for each scored frame.</p>
-  <h2 class="section">Citation</h2>
-  <p>If you use iMOSS in your work, please cite the accompanying paper:</p>
+  <span class="tag">Open-source neuroscience platform</span>
+  <p class="lead">An open-source, low-cost platform for high-resolution scoring of stress-coping
+     behavior in the tail suspension test (TST), built for precise synchronization with neural
+     recordings. It combines a custom recording chamber, a sensor-based automated scorer
+     (<b>iMOSS-AS</b>), and a video-based manual scorer (<b>iMOSS-MV</b>). Though developed for the
+     TST, it generalizes to other binary behavior-scoring problems.</p>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <h2 class="section" id="overview">Overview</h2>
+  <p>In the tail suspension test, a mouse suspended by its tail alternates between active
+     (struggling) and passive (immobile) states; immobility is a widely used index of behavioral
+     despair and antidepressant screening. Traditional scoring is coarse and subjective. iMOSS
+     replaces it with two complementary, high-resolution tools that share one custom chamber:</p>
+  <ul>
+    <li><b>iMOSS-AS</b> (Automated, Sensor-based) — detects immobility/mobility bouts from a
+      load-cell signal in the suspension bar, sampled at high resolution, with a
+      machine-learning-optimized detection threshold.</li>
+    <li><b>iMOSS-MV</b> (Manual, Video-based) — lets a scorer annotate the exact onset frame of
+      each behavioral event, frame by frame, as a precise reference standard.</li>
+  </ul>
+  <p>Both were validated against pharmacological manipulation (imipramine) and integrated with
+     fiber photometry, enabling combined behavior–neural analysis. This page focuses on building
+     and running <b>iMOSS-AS</b>, then introduces iMOSS-MV.</p>
+
+  <div class="figrow">
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/iMOSS_workflow.png" alt="iMOSS workflow overview" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: iMOSS workflow<br><span style="font-size:.78rem">iMOSS_workflow.png</span></div>
+      <figcaption>End-to-end iMOSS workflow: custom chamber, recording, and the two scoring tools.</figcaption>
+    </figure></div>
+
+  </div>
+
+  <!-- ===================== CHAMBER ===================== -->
+  <h2 class="section" id="chamber">Building the TST chamber</h2>
+  <p>iMOSS uses a custom-designed TST apparatus that standardizes recording conditions and houses
+     the sensing hardware. Its core components are:</p>
+  <table class="spec">
+    <thead><tr><th>Component</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Recording chamber</td><td>Enclosed, evenly lit space that isolates the animal and keeps a consistent background for clean video.</td></tr>
+      <tr><td>Removable resting platform</td><td>Supports mice during the pre-start period (the apparatus can stage several mice before suspension), then is removed to begin the test.</td></tr>
+      <tr><td>Integrated webcam (30 fps)</td><td>Captures high-quality video used by iMOSS-MV and for review.</td></tr>
+      <tr><td>White-noise speaker</td><td>Masks ambient sound for consistent acoustic conditions across sessions.</td></tr>
+      <tr><td>iMOSS-AS hardware module</td><td>Load cells + amplifiers + Arduino built into the suspension bar (next section).</td></tr>
+    </tbody>
+  </table>
+  <p class="note" style="margin-top:12px">Chamber part files and the exact mechanical layout are provided in the
+     <a href="https://github.com/addy9908/iMOSS" target="_blank" rel="noopener">GitHub repository</a>;
+     refer there for current dimensions, materials, and the most up-to-date build.</p>
+
+  <div class="figrow">
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/Chamber_view.png" alt="Chamber front view" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: chamber (front)<br><span style="font-size:.78rem">Chamber_view.png</span></div>
+      <figcaption>Front view — recording chamber with platform and webcam.</figcaption>
+    </figure></div>
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/Chamber_view_rear.png" alt="Chamber rear view with AS module" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: chamber (rear/top)<br><span style="font-size:.78rem">Chamber_view_rear.png</span></div>
+      <figcaption>Rear/top view — load cells, amplifiers, and Arduino of the iMOSS-AS module.</figcaption>
+    </figure></div>
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/chamber_design.png" alt="Chamber design" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: chamber design<br><span style="font-size:.78rem">chamber_design.png</span></div>
+      <figcaption>Chamber design / layout.</figcaption>
+    </figure></div>
+  </div>
+
+  <!-- ===================== iMOSS-AS HARDWARE ===================== -->
+  <h2 class="section" id="as"><span class="pill">Focus</span> iMOSS-AS hardware module</h2>
+  <p>iMOSS-AS adds a motion-detection module to the chamber. Struggle-induced force fluctuations
+     from the suspended mouse are transduced by a strain-gauge load cell built into the suspension
+     bar, conditioned by an amplifier, and digitized by an Arduino running custom firmware. The
+     current firmware supports <b>four load cells</b>, so several suspension positions can be
+     recorded in parallel.</p>
+    <div class="figrow">
+	<div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/iMOSS_hardware_module.png" alt="iMOSS hardware module" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: hardware module<br><span style="font-size:.78rem">iMOSS_hardware_module.png</span></div>
+      <figcaption>The custom TST chamber with recording, audio, and the iMOSS-AS sensing module.</figcaption>
+    </figure></div>
+
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/80Hz.png" alt="80 Hz sampling" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: 80 Hz signal<br><span style="font-size:.78rem">80Hz.png</span></div>
+      <figcaption>iMOSS-AS load-cell signal acquired at 80 Hz.</figcaption>
+    </figure></div>
+	</div>
+
+  <h3 style="margin-top:22px">Bill of materials (per the paper)</h3>
+  <table class="spec">
+    <thead><tr><th>Part</th><th>Specification</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td>Load cell</td><td>SparkFun TAL221, 100 g capacity (strain gauge)</td><td>Integrated into the suspension bar; converts struggle force into an analog signal.</td></tr>
+      <tr><td>Amplifier / ADC</td><td>SparkFun HX711 (24-bit)</td><td>Conditions and digitizes the load-cell signal.</td></tr>
+      <tr><td>Microcontroller</td><td>Arduino Uno</td><td>Runs the firmware, reads the HX711(s), streams data for acquisition.</td></tr>
+      <tr><td>Firmware library</td><td>HX711_ADC (olkal)</td><td>Non-blocking HX711 reading; settling time &amp; filtering set in its <code>config.h</code>.</td></tr>
+      <tr><td>Count</td><td>Up to 4 load cells + 4 HX711 amplifiers</td><td>Parallel recording of multiple suspension positions.</td></tr>
+    </tbody>
+  </table>
+  <div class="figrow">
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/Material_list.png" alt="Material list" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: material list<br><span style="font-size:.78rem">Material_list.png</span></div>
+      <figcaption>Parts list for the iMOSS-AS hardware module.</figcaption>
+    </figure></div>
+  </div>
+
+  <h3 style="margin-top:22px">Assembly outline</h3>
+  <ol class="steps">
+    <li>Mount each <b>TAL221 load cell</b> into the suspension bar so the mouse's tail attachment
+        loads the cell — vertical struggle force flexes the strain gauge.</li>
+    <li>Wire each load cell to its <b>HX711</b> amplifier (the four strain-gauge leads: E+, E−,
+        A−, A+). Keep the load-cell wires short and twisted to reduce noise.</li>
+    <li>Connect each HX711 to the <b>Arduino Uno</b> using separate data (DOUT) and clock (SCK)
+        pins. In <code>iMOSS_AS_V1.ino</code> the first channel uses <code>DOUT = D2</code>,
+        <code>SCK = D3</code>, with subsequent channels on the following pins.</li>
+    <li>Power the HX711 boards from the Arduino's regulated supply and share a common ground.</li>
+    <li>Flash the firmware (next section), then verify each channel produces a changing signal when
+        you gently load the corresponding bar.</li>
+  </ol>
+  <div class="callout">
+    <b>Noise matters.</b> Because struggle signals are small, follow good practice for HX711/load-cell
+    wiring: short, twisted sensor leads, a solid common ground, and stable mounting so vibration
+    isn't read as movement. The HX711_ADC library's <code>config.h</code> lets you tune the settling
+    sample count and filtering.
+  </div>
+
+
+
+  </div>
+
+  <!-- ===================== FIRMWARE & ACQUISITION ===================== -->
+  <h2 class="section" id="firmware">Firmware &amp; data acquisition</h2>
+  <ol class="steps">
+    <li>Install the <b>Arduino IDE</b>.</li>
+    <li>Install the <b>HX711_ADC</b> library (olkal) via the Library Manager.</li>
+    <li>Open <code>iMOSS_AS_V1.ino</code> from the repository, connect the Arduino Uno, and click
+        <b>Upload</b>.</li>
+    <li>Acquire data through the provided <b>Bonsai-RX</b> workflow, which displays real-time video,
+        the load-cell signals, and TTL inputs, and saves everything for offline analysis. Example
+        Bonsai workflows are included in the repo (e.g. <code>ZY_tailSuspension_V11_Opstim.bonsai</code>,
+        and <code>ZY_TST_FP.bonsai</code> for fiber-photometry sessions).</li>
+  </ol>
+  <p>The TTL channel is what makes synchronization possible: the same timing reference is shared
+     across video, load-cell data, and (optionally) a neural recording system or optogenetic stimulating lasers, so streams can be
+     aligned precisely afterward.</p>
+  <div class="figrow">
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/Bonsai_UI.png" alt="Bonsai-RX acquisition UI" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: Bonsai-RX UI<br><span style="font-size:.78rem">Bonsai_UI.png</span></div>
+      <figcaption>Bonsai-RX acquisition: real-time video, load-cell signals, and TTL inputs.</figcaption>
+    </figure></div>
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/Bonsai_workflow.png" alt="Bonsai workflow" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: Bonsai workflow<br><span style="font-size:.78rem">Bonsai_workflow.png</span></div>
+      <figcaption>The Bonsai-RX workflow graph used for synchronized acquisition.</figcaption>
+    </figure></div>
+  </div>
+  <div class="callout amber">
+    <b>Sampling resolution.</b> iMOSS-AS samples the behavioral (load-cell) signal at <b>80 Hz</b>,
+    while iMOSS-MV scores video at <b>30 fps</b>. Both are high enough to align cleanly with neural
+    data streams.
+  </div>
+
+
+  <!-- ===================== ANALYSIS ===================== -->
+  <h2 class="section" id="analysis">Analyzing iMOSS-AS data &amp; the ML threshold</h2>
+      <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/Figure_3.png" alt="iMOSS-AS workflow" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: iMOSS-AS workflow<br><span style="font-size:.78rem">iMOSS_AS_workflow.png</span></div>
+      <figcaption>Signal chain and iMOSS-AS data workflow.</figcaption>
+    </figure></div>
+  <p>After acquisition, the load-cell signal is processed to segment the session into immobility and
+     mobility bouts. The key step is choosing a <b>detection threshold</b> that separates genuine
+     struggle from baseline noise.</p>
+  <ol class="steps">
+    <li><b>Extract the struggle signal.</b> The raw load-cell trace is processed into a signal whose
+        fluctuations reflect movement; its noise floor sets the scale for candidate thresholds.</li>
+    <li><b>Try candidate thresholds.</b> The paper evaluates a set of candidate values
+        (0.4, 0.6, 0.8, 1.0, 1.2), chosen relative to the extracted signal's noise level. Each
+        threshold yields a different immobility/mobility segmentation.</li>
+    <li><b>Optimize by machine learning.</b> Using manual iMOSS-MV scoring as the reference, the
+        method fits each animal's <b>individual optimal threshold</b> and also a single
+        <b>global threshold</b> that minimizes prediction error across animals (the global value was
+        confirmed to sit within the central range of individual optima).</li>
+    <li><b>Quantify bouts.</b> From the segmentation you obtain cumulative immobility time, bout
+        counts, durations, and latency — the standard TST readouts, at high temporal resolution.</li>
+  </ol>
+  <div class="callout">
+    <b>When to use which threshold.</b> The ML-optimized threshold is preferred for detecting subtle
+    effects or fine-grained temporal analysis; an empirically chosen fixed threshold can be adequate
+    for confirming large effects and reduces the labor involved.
+  </div>
+
+  <div class="figrow">
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/Figure_4.png" alt="Candidate thresholds on signal" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: candidate thresholds (add image)<br><span style="font-size:.78rem">best-guess: ML_threshold.png — rename to match your file</span></div>
+      <figcaption>Candidate thresholds (0.4–1.2) overlaid on the extracted load-cell signal.</figcaption>
+    </figure></div>
+  </div>
+
+  <!-- ===================== iMOSS-MV ===================== -->
+  <h2 class="section" id="mv">iMOSS-MV — video-based manual scoring</h2>
+  <p>iMOSS-MV is the companion manual tool and the reference standard the automated thresholds are
+     optimized against. It loads the TST video and lets a scorer step <b>frame by frame</b> to mark
+     the exact onset frame of each binary event (mobility ↔ immobility), rather than relying on a
+     stopwatch. At 30 fps it produces precise, reproducible annotations that can be aligned with
+     neural data or used to benchmark iMOSS-AS.</p>
+     <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/iMOSS_MV_workflow.png" alt="iMOSS-MV workflow" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: iMOSS-MV workflow<br><span style="font-size:.78rem">iMOSS_MV_workflow.png</span></div>
+      <figcaption>The iMOSS-MV scoring workflow.</figcaption>
+    </figure></div>
+  <p>What iMOSS-MV lets you do:</p>
+  <ul>
+    <li>Load a recorded TST video and navigate it one frame at a time.</li>
+    <li>Annotate the precise onset frame of each mobility/immobility transition.</li>
+    <li>Export a frame-accurate event timeline for analysis or for use as the ground truth that
+        calibrates iMOSS-AS thresholds.</li>
+  </ul>
+  <div class="figrow">
+    <div class="fig"><figure>
+      <img src="https://raw.githubusercontent.com/addy9908/iMOSS/main/Image/iMOSS_MV_V3.png" alt="iMOSS-MV interface" onerror="this.parentNode.querySelector('.ph')?.style.setProperty('display','flex');this.style.display='none'">
+      <div class="ph" style="display:none">Figure: iMOSS-MV interface<br><span style="font-size:.78rem">iMOSS_MV_V3.png</span></div>
+      <figcaption>iMOSS-MV (V3) — frame-by-frame manual annotation of behavioral onsets.</figcaption>
+    </figure></div>
+
+  </div>
+
+  <!-- ===================== FP ===================== -->
+  <h2 class="section" id="fp">Synchronization with neural recordings</h2>
+  <p>Because both tools run at high temporal resolution and the acquisition shares a TTL timing
+     reference, iMOSS integrates directly with neural recording. In the paper, struggle signals
+     (particularly those scored by iMOSS-AS) were aligned with fiber-photometry calcium activity
+     (GCaMP8s) in medial septum VGluT2 neurons, allowing comparison of neural activity between
+     mobility and immobility states — e.g. average Z-score (AUC/s), calcium peak frequency, and peak
+     amplitude around behavioral onsets.</p>
+  <p class="note">This pairs naturally with the companion FST + fiber photometry synchronization
+     project for downstream analysis.</p>
+
+  <!-- ===================== INSTALL ===================== -->
+  <h2 class="section" id="install">Software installation</h2>
+  <p>iMOSS-MV and iMOSS-AS analysis are written in <b>Python</b>, using OpenCV, Tkinter, NumPy,
+     Pandas, Pillow, SciPy, and PyExcelerate. Released under the MIT license.</p>
+  <ol class="steps">
+    <li>Clone the repository:
+      <div class="workings" style="margin-top:6px"><code>git clone https://github.com/addy9908/iMOSS.git</code></div></li>
+    <li>Install the Python dependencies (a virtual environment is recommended):
+      <div class="workings" style="margin-top:6px"><code>pip install opencv-python numpy pandas pillow scipy pyexcelerate</code></div></li>
+    <li>For iMOSS-AS hardware, install the Arduino IDE and the HX711_ADC library, then upload
+        <code>iMOSS_AS_V1.ino</code> to the Arduino.</li>
+  </ol>
+  <p class="note">The repository is actively maintained (e.g. a V3 release improved layout and
+     OpenCV compatibility). Always check the repo's README for the current, authoritative install
+     steps and any packaged releases.</p>
+
+  <!-- ===================== CITATION ===================== -->
+  <h2 class="section" id="cite">Citation</h2>
+  <p>If iMOSS supports your work, please cite:</p>
   <div class="workings">
     Ye, Z. et al. <i>iMOSS: an integrated open-source tail suspension test platform for
     high-resolution immobility scoring and synchronization with neural activity.</i>
-    Frontiers in Behavioral Neuroscience, 2026. doi:10.3389/fnbeh.2026.1819512
+    Frontiers in Behavioral Neuroscience (2026). doi:10.3389/fnbeh.2026.1819512
   </div>
-  <p><a href="https://www.frontiersin.org/journals/behavioral-neuroscience/articles/10.3389/fnbeh.2026.1819512/full"
-        target="_blank" rel="noopener">Read the paper &rarr;</a></p>
+  <p style="margin-top:10px">
+    <a href="https://www.frontiersin.org/journals/behavioral-neuroscience/articles/10.3389/fnbeh.2026.1819512/full" target="_blank" rel="noopener">Read the paper &rarr;</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/addy9908/iMOSS" target="_blank" rel="noopener">View iMOSS on GitHub &rarr;</a>
+  </p>
 
   <h2 class="section">License</h2>
   <p>iMOSS is released under the MIT license.</p>
-
 </main>
 
 <footer class="container">
-  &copy; <span id="year"></span> Zengyou Ye &middot; Hosted on GitHub Pages &middot; MIT Licensed
+  &copy; <span id="year"></span> Zengyou Ye
 </footer>
 
 <script src="../assets/data.js"></script>
 <script src="../assets/nav.js"></script>
+<script>
+  (function(){
+    function align(){
+      var nav=document.querySelector('header.site');
+      var panel=document.getElementById('freezePanel');
+      if(nav&&panel){ panel.style.top=nav.offsetHeight+'px'; }
+    }
+    window.addEventListener('load',align);
+    window.addEventListener('resize',align);
+  })();
+</script>
 </body>
 </html>
