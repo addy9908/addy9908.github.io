@@ -57,8 +57,8 @@ const DOCS = [
   {
     title: "Behavioral Cage Control System - Pico W",
     blurb: "A wireless, four-cage platform for delivering programmable stimulation and logging digital behavioral events in real time",
-    docPage: "PicoW_BehavioralCageControlSystem.html",      
-    repo: "", 
+    docPage: "projects/PicoW_BehavioralCageControlSystem.html",      
+    repo: "https://github.com/addy9908/behavioral-cage-control-PicoW", 
     live: ""  
   }
   
