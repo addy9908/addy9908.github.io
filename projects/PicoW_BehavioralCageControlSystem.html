@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Behavioral Cage Control System</title>
+<link rel="stylesheet" href="../assets/style.css">
 <style>
   :root {
     --primary: #0056b3;
@@ -27,10 +28,16 @@
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
+  /* ---- Dark override for the shared nav.js header on THIS page only ---- */
+  header.site{background:#121829 !important;border-bottom:1px solid rgba(255,255,255,.08) !important;}
+  header.site .brand{color:#fff !important;}
+  header.site .nav a.link{color:#c7d2e0 !important;}
+  header.site .nav a.link:hover{background:rgba(255,255,255,.08) !important;color:#fff !important;}
+
   /* Hero */
   .hero {
     position: relative;
-    padding: 90px 24px 70px;
+    padding: 70px 24px 60px;
     text-align: center;
     background: radial-gradient(circle at 50% 0%, #1e2a4a 0%, var(--bg) 60%);
     overflow: hidden;
@@ -77,7 +84,6 @@
   .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 6px 20px rgba(0,86,179,0.4); }
   .btn-ghost { background: rgba(255,255,255,0.06); color: #e6e9f0; border: 1px solid rgba(255,255,255,0.15); }
 
-  /* floating pulse dots in hero */
   .pulse-grid { position: absolute; inset: 0; pointer-events: none; opacity: 0.35; }
   .dot {
     position: absolute; width: 8px; height: 8px; border-radius: 50%;
@@ -86,18 +92,11 @@
   }
   @keyframes float { 0%,100%{transform:translateY(0);opacity:.3} 50%{transform:translateY(-20px);opacity:.8} }
 
-  /* Container */
   .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
   section { padding: 64px 0; }
-  .section-title {
-    font-size: 1.9rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-    text-align: center;
-  }
+  .section-title { font-size: 1.9rem; font-weight: 700; margin-bottom: 8px; text-align: center; color:#fff; }
   .section-sub { text-align: center; color: var(--muted); margin-bottom: 44px; }
 
-  /* Feature cards */
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
   .card {
     background: var(--card);
@@ -111,7 +110,6 @@
   .card h3 { font-size: 1.15rem; margin-bottom: 8px; color: #fff; }
   .card p { color: #aeb6c7; font-size: 0.95rem; }
 
-  /* Specs */
   .specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; }
   .spec {
     background: linear-gradient(135deg, rgba(0,86,179,0.15), rgba(23,162,184,0.08));
@@ -123,14 +121,12 @@
   .spec .num { font-size: 2.2rem; font-weight: 800; color: #7fb3ff; }
   .spec .lbl { color: #aeb6c7; font-size: 0.9rem; margin-top: 4px; }
 
-  /* Pinout table */
   .pin-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
   .pin-table th { background: var(--primary); color: #fff; padding: 12px; text-align: left; font-size: 0.9rem; }
   .pin-table td { padding: 11px 12px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.92rem; }
   .pin-table tr:hover td { background: rgba(255,255,255,0.03); }
   .mono { font-family: 'SF Mono', Consolas, monospace; color: var(--accent); font-weight: 600; }
 
-  /* Workflow steps */
   .steps { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 20px; }
   .step { position: relative; padding: 26px 22px 22px; background: var(--card); border-radius: 14px; border: 1px solid rgba(255,255,255,0.07); }
   .step .n {
@@ -143,7 +139,6 @@
   .step h3 { margin: 10px 0 8px; font-size: 1.05rem; color: #fff; }
   .step p { color: #aeb6c7; font-size: 0.92rem; }
 
-  /* Tech chips */
   .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
   .chip {
     background: rgba(255,255,255,0.06);
@@ -151,12 +146,17 @@
     padding: 8px 16px; border-radius: 20px; font-size: 0.88rem; color: #d6dae4;
   }
 
-  footer { text-align: center; padding: 40px 24px; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.07); font-size: 0.9rem; }
+  .darkfooter { text-align: center; padding: 40px 24px; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.07); font-size: 0.9rem; background:var(--bg); }
+  .darkfooter a { color: var(--accent); }
 
   .note { background: rgba(255,193,7,0.08); border-left: 3px solid var(--yellow); padding: 14px 18px; border-radius: 8px; color: #d6dae4; font-size: 0.92rem; margin-top: 20px; }
+
+  .backlink{display:inline-block;margin:14px 0 0 24px;color:#9fb4cc !important;font-size:.9rem}
 </style>
 </head>
-<body>
+<body data-root="../">
+
+<a class="backlink" href="../index.html">&larr; Back to home</a>
 
 <header class="hero">
   <div class="pulse-grid" id="dots"></div>
@@ -165,7 +165,7 @@
   <p>A wireless, four-cage platform for delivering programmable stimulation and logging digital behavioral events in real time — controlled entirely from a browser-based dashboard, no software install required.</p>
   <div class="hero-btns">
     <a class="btn btn-primary" href="#features">Explore Features</a>
-    <a class="btn btn-ghost" href="#pinout">Hardware Map</a>
+    <a class="btn btn-ghost" href="https://github.com/addy9908/behavioral-cage-control-PicoW" target="_blank" rel="noopener">View on GitHub &#8599;</a>
   </div>
 </header>
 
@@ -261,11 +261,25 @@
     </div>
   </section>
 
+  <section id="repo" style="padding-top:0">
+    <h2 class="section-title">Repository</h2>
+    <p class="section-sub">Source, firmware, and wiring details</p>
+    <div style="text-align:center">
+      <a class="btn btn-primary" href="https://github.com/addy9908/behavioral-cage-control-PicoW" target="_blank" rel="noopener">View on GitHub &#8599;</a>
+    </div>
+  </section>
+
 </div>
 
-<footer>
+<footer class="darkfooter">
   Behavioral Cage Control System &middot; Hosted on GitHub Pages<br>
-  <a href="https://addy9908.github.io">addy9908.github.io</a>
+  <a href="https://github.com/addy9908/behavioral-cage-control-PicoW" target="_blank" rel="noopener">github.com/addy9908/behavioral-cage-control-PicoW</a>
+  <div style="margin-top:12px">
+    <a href="https://hits.sh/addy9908.github.io/projects/behavioral-cage-control.html/" target="_blank" rel="noopener">
+      <img alt="Page visits" src="https://hits.sh/addy9908.github.io/projects/behavioral-cage-control.html.svg?label=Page%20visits&color=17a2b8"
+           onerror="this.parentNode.style.display='none'">
+    </a>
+  </div>
 </footer>
 
 <script>
@@ -282,5 +296,7 @@
   }
 </script>
 
+<script src="../assets/data.js"></script>
+<script src="../assets/nav.js"></script>
 </body>
 </html>
