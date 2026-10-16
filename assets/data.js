@@ -53,7 +53,16 @@ const DOCS = [
     docPage: "",         
     repo: "https://github.com/addy9908/ZY_EthovisionIO", 
     live: ""  
+  },
+  {
+    title: "Behavioral Cage Control System - Pico W",
+    blurb: "A wireless, four-cage platform for delivering programmable stimulation and logging digital behavioral events in real time",
+    docPage: "PicoW_BehavioralCageControlSystem.html",      
+    repo: "", 
+    live: ""  
   }
+  
+  
 ];
 
 /* --- Syringe presets (used by the Syringe Pump calculator) ---

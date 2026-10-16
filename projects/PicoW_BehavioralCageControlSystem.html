@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Behavioral Cage Control System</title>
+<style>
+  :root {
+    --primary: #0056b3;
+    --accent: #17a2b8;
+    --green: #28a745;
+    --yellow: #ffc107;
+    --red: #dc3545;
+    --dark: #1a1f2e;
+    --muted: #6c757d;
+    --bg: #0f1420;
+    --card: #1a2133;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: #e6e9f0;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    padding: 90px 24px 70px;
+    text-align: center;
+    background: radial-gradient(circle at 50% 0%, #1e2a4a 0%, var(--bg) 60%);
+    overflow: hidden;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(23,162,184,0.4);
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 18px;
+    background: linear-gradient(90deg, #fff 20%, #7fb3ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    max-width: 640px;
+    margin: 0 auto 30px;
+    font-size: 1.15rem;
+    color: #aeb6c7;
+  }
+  .hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn:hover { transform: translateY(-2px); text-decoration: none; }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 6px 20px rgba(0,86,179,0.4); }
+  .btn-ghost { background: rgba(255,255,255,0.06); color: #e6e9f0; border: 1px solid rgba(255,255,255,0.15); }
+
+  /* floating pulse dots in hero */
+  .pulse-grid { position: absolute; inset: 0; pointer-events: none; opacity: 0.35; }
+  .dot {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0);opacity:.3} 50%{transform:translateY(-20px);opacity:.8} }
+
+  /* Container */
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 64px 0; }
+  .section-title {
+    font-size: 1.9rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .section-sub { text-align: center; color: var(--muted); margin-bottom: 44px; }
+
+  /* Feature cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .card {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 26px;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .card:hover { transform: translateY(-4px); border-color: rgba(23,162,184,0.5); }
+  .card .icon { font-size: 28px; margin-bottom: 14px; }
+  .card h3 { font-size: 1.15rem; margin-bottom: 8px; color: #fff; }
+  .card p { color: #aeb6c7; font-size: 0.95rem; }
+
+  /* Specs */
+  .specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; }
+  .spec {
+    background: linear-gradient(135deg, rgba(0,86,179,0.15), rgba(23,162,184,0.08));
+    border: 1px solid rgba(23,162,184,0.25);
+    border-radius: 12px;
+    padding: 22px;
+    text-align: center;
+  }
+  .spec .num { font-size: 2.2rem; font-weight: 800; color: #7fb3ff; }
+  .spec .lbl { color: #aeb6c7; font-size: 0.9rem; margin-top: 4px; }
+
+  /* Pinout table */
+  .pin-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+  .pin-table th { background: var(--primary); color: #fff; padding: 12px; text-align: left; font-size: 0.9rem; }
+  .pin-table td { padding: 11px 12px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.92rem; }
+  .pin-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .mono { font-family: 'SF Mono', Consolas, monospace; color: var(--accent); font-weight: 600; }
+
+  /* Workflow steps */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 20px; }
+  .step { position: relative; padding: 26px 22px 22px; background: var(--card); border-radius: 14px; border: 1px solid rgba(255,255,255,0.07); }
+  .step .n {
+    position: absolute; top: -16px; left: 22px;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; box-shadow: 0 4px 12px rgba(0,86,179,0.5);
+  }
+  .step h3 { margin: 10px 0 8px; font-size: 1.05rem; color: #fff; }
+  .step p { color: #aeb6c7; font-size: 0.92rem; }
+
+  /* Tech chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .chip {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 8px 16px; border-radius: 20px; font-size: 0.88rem; color: #d6dae4;
+  }
+
+  footer { text-align: center; padding: 40px 24px; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.07); font-size: 0.9rem; }
+
+  .note { background: rgba(255,193,7,0.08); border-left: 3px solid var(--yellow); padding: 14px 18px; border-radius: 8px; color: #d6dae4; font-size: 0.92rem; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="pulse-grid" id="dots"></div>
+  <span class="hero-badge">Raspberry Pi Pico W · Neuroscience</span>
+  <h1>Behavioral Cage Control System</h1>
+  <p>A wireless, four-cage platform for delivering programmable stimulation and logging digital behavioral events in real time — controlled entirely from a browser-based dashboard, no software install required.</p>
+  <div class="hero-btns">
+    <a class="btn btn-primary" href="#features">Explore Features</a>
+    <a class="btn btn-ghost" href="#pinout">Hardware Map</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="specs">
+      <div class="spec"><div class="num">4</div><div class="lbl">Independent Cages</div></div>
+      <div class="spec"><div class="num">16</div><div class="lbl">Digital Inputs (DIO)</div></div>
+      <div class="spec"><div class="num">100ms</div><div class="lbl">Dashboard Refresh</div></div>
+      <div class="spec"><div class="num">0</div><div class="lbl">Software to Install</div></div>
+    </div>
+  </section>
+
+  <section id="features">
+    <h2 class="section-title">What It Does</h2>
+    <p class="section-sub">Built on a Raspberry Pi Pico W running MicroPython as a self-hosted Wi-Fi access point</p>
+    <div class="grid">
+      <div class="card">
+        <div class="icon">⚡</div>
+        <h3>Programmable Stimulation</h3>
+        <p>Deliver output pulse trains with configurable pulse width, frequency, pulse count, trial count, and inter-trial interval — per cage or across all four at once.</p>
+      </div>
+      <div class="card">
+        <div class="icon">📊</div>
+        <h3>Live Event Monitoring</h3>
+        <p>Each cage has a scrolling timeline that plots the output channel plus four digital inputs against the Pico's internal clock for a continuous 24/7 preview.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔢</div>
+        <h3>Edge-Based Counting</h3>
+        <p>Every DIO channel counts events on either rising or falling edges, selectable live from the dashboard. Counts can be exported at any time.</p>
+      </div>
+      <div class="card">
+        <div class="icon">⏺️</div>
+        <h3>Recording with CSV Export</h3>
+        <p>Assign Mouse IDs, hit record, and each cage's events are logged with computer time and trial-relative time. Data auto-downloads as per-cage CSV files on stop.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔗</div>
+        <h3>External Trigger Sync</h3>
+        <p>Arm recording to wait for a 3.3V rising edge on GP20, so sessions start in sync with external equipment via a hardware interrupt.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🛑</div>
+        <h3>Boot Safety Switch</h3>
+        <p>Grounding GP22 at boot aborts the behavior app and drops to the REPL — a safe way to recover the board for editing in Thonny.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="workflow">
+    <h2 class="section-title">How a Session Works</h2>
+    <p class="section-sub">From power-on to downloaded data</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Connect</h3><p>Join the Pico's Wi-Fi access point and open the dashboard in any browser.</p></div>
+      <div class="step"><div class="n">2</div><h3>Configure</h3><p>Enter Mouse IDs, set stimulation parameters, and choose rising/falling edges per input.</p></div>
+      <div class="step"><div class="n">3</div><h3>Record</h3><p>Start immediately, or arm the system to wait for the external GP20 trigger.</p></div>
+      <div class="step"><div class="n">4</div><h3>Export</h3><p>Stop recording and the browser automatically saves timestamped CSV files per cage.</p></div>
+    </div>
+  </section>
+
+  <section id="pinout">
+    <h2 class="section-title">Hardware Mapping</h2>
+    <p class="section-sub">GPIO assignments on the Raspberry Pi Pico W</p>
+    <table class="pin-table">
+      <thead>
+        <tr><th>Cage</th><th>Output</th><th>Inputs (DIO_1–4)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Cage 1</strong></td><td class="mono">GP4</td><td class="mono">GP0, GP1, GP2, GP3</td></tr>
+        <tr><td><strong>Cage 2</strong></td><td class="mono">GP9</td><td class="mono">GP5, GP6, GP7, GP8</td></tr>
+        <tr><td><strong>Cage 3</strong></td><td class="mono">GP14</td><td class="mono">GP10, GP11, GP12, GP13</td></tr>
+        <tr><td><strong>Cage 4</strong></td><td class="mono">GP19</td><td class="mono">GP15, GP16, GP17, GP18</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <strong>Sync &amp; Safety:</strong> &nbsp;External trigger input on <span class="mono">GP20</span> (3.3V rising edge). Boot safety jumper on <span class="mono">GP22</span> — ground it to abort boot and drop to the REPL.
+    </div>
+  </section>
+
+  <section id="tech">
+    <h2 class="section-title">Built With</h2>
+    <p class="section-sub">A lightweight, self-contained stack</p>
+    <div class="chips">
+      <span class="chip">Raspberry Pi Pico W</span>
+      <span class="chip">MicroPython</span>
+      <span class="chip">uasyncio</span>
+      <span class="chip">Wi-Fi Access Point</span>
+      <span class="chip">HTML / CSS / JS</span>
+      <span class="chip">HTML5 Canvas</span>
+      <span class="chip">REST-style API</span>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  Behavioral Cage Control System &middot; Hosted on GitHub Pages<br>
+  <a href="https://addy9908.github.io">addy9908.github.io</a>
+</footer>
+
+<script>
+  // scatter floating dots across the hero
+  const dc = document.getElementById('dots');
+  for (let i = 0; i < 18; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.style.left = Math.random() * 100 + '%';
+    d.style.top = Math.random() * 100 + '%';
+    d.style.animationDelay = (Math.random() * 6) + 's';
+    d.style.animationDuration = (4 + Math.random() * 4) + 's';
+    dc.appendChild(d);
+  }
+</script>
+
+</body>
+</html>
