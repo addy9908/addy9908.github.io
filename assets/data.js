@@ -49,7 +49,7 @@ const DOCS = [
   },
   {
     title: "DIY Arduino Uno as Ethovision IO box",
-    blurb: "ZY_PinBridge provides EthoVision-controlled Arduino I/O for a single behavioral chamber",
+    blurb: "**YeLink** (Your Experiment Link) is a low-cost interface for video trackiing softwares."
     docPage: "",         
     repo: "https://github.com/addy9908/ZY_EthovisionIO", 
     live: ""  
